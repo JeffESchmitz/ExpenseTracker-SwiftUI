@@ -10,7 +10,8 @@
       "Bash(git branch:*)",
       "Bash(gh issue list:*)",
       "Bash(gh issue view:*)",
-      "mcp__XcodeBuildMCP__get_sim_app_path"
+      "mcp__XcodeBuildMCP__get_sim_app_path",
+      "mcp__XcodeBuildMCP__test_sim"
     ],
     "deny": [],
     "ask": []

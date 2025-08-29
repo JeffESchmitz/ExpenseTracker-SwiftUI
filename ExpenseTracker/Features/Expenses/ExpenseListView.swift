@@ -10,23 +10,117 @@ import SwiftData
 
 struct ExpenseListView: View {
     @Query(sort: \Expense.date, order: .reverse) private var expenses: [Expense]
+    @Query private var categories: [Category]
+    
     @State private var searchText = ""
     @State private var showingAddSheet = false
     @State private var showingEditSheet = false
     @State private var showingDeleteConfirmation = false
+    @State private var showingCustomDateSheet = false
     @State private var expenseToDelete: Expense?
     @State private var expenseToEdit: Expense?
     @Environment(\.modelContext) private var modelContext
     
+    // Filter persistence with AppStorage
+    @AppStorage("filterType") private var filterTypeRaw = DateRangeFilter.defaultFilter.rawValue
+    @AppStorage("customStartDate") private var customStartDate: Date?
+    @AppStorage("customEndDate") private var customEndDate: Date?
+    @AppStorage("selectedCategoryName") private var selectedCategoryName: String?
+    
+    private var selectedFilter: DateRangeFilter {
+        DateRangeFilter(rawValue: filterTypeRaw) ?? .defaultFilter
+    }
+    
+    private var selectedCategory: Category? {
+        guard let categoryName = selectedCategoryName else { return nil }
+        return categories.first { $0.name == categoryName }
+    }
+    
+    private var hasActiveFilters: Bool {
+        selectedFilter != .defaultFilter || selectedCategory != nil
+    }
+    
     private var filteredExpenses: [Expense] {
-        if searchText.isEmpty {
-            return expenses
-        } else {
-            return expenses.filter { expense in
+        var result = expenses
+        
+        // Apply date range filter
+        if let dateRange = selectedFilter.dateRange(customStart: customStartDate, customEnd: customEndDate) {
+            result = result.filter { expense in
+                expense.date >= dateRange.start && expense.date <= dateRange.end
+            }
+        }
+        
+        // Apply category filter
+        if let selectedCategory = selectedCategory {
+            result = result.filter { expense in
+                expense.category.name == selectedCategory.name
+            }
+        }
+        
+        // Apply search filter
+        if !searchText.isEmpty {
+            result = result.filter { expense in
                 let notesMatch = expense.notes?.localizedCaseInsensitiveContains(searchText) ?? false
                 let categoryMatch = expense.category.name.localizedCaseInsensitiveContains(searchText)
                 return notesMatch || categoryMatch
             }
+        }
+        
+        return result
+    }
+    
+    private var navigationTitle: String {
+        if selectedFilter == .defaultFilter {
+            return "Expenses"
+        } else {
+            return "Expenses • \(selectedFilter.shortDisplayName)"
+        }
+    }
+    
+    private var activeFiltersDescription: String? {
+        guard hasActiveFilters else { return nil }
+        
+        var components: [String] = []
+        
+        // Add date range info
+        if let dateRange = selectedFilter.dateRange(customStart: customStartDate, customEnd: customEndDate) {
+            let formatter = DateFormatter()
+            formatter.dateStyle = .medium
+            components.append("Range: \(formatter.string(from: dateRange.start)) – \(formatter.string(from: dateRange.end))")
+        }
+        
+        // Add category info
+        if let category = selectedCategory {
+            components.append("Category: \(category.name)")
+        }
+        
+        return components.joined(separator: ", ")
+    }
+    
+    private var shouldShowNoResultsForFilters: Bool {
+        filteredExpenses.isEmpty && !expenses.isEmpty && (hasActiveFilters || !searchText.isEmpty)
+    }
+    
+    private var filterEmptyStateView: some View {
+        VStack(spacing: 16) {
+            ContentUnavailableView(
+                "No results",
+                systemImage: "line.3.horizontal.decrease.circle",
+                description: Text("No expenses match your current filters.")
+            )
+            
+            VStack(spacing: 8) {
+                Button("Clear Filters") {
+                    clearAllFilters()
+                }
+                .buttonStyle(.borderedProminent)
+                
+                Button("Adjust Filters…") {
+                    showingCustomDateSheet = true
+                }
+                .buttonStyle(.bordered)
+            }
+            .padding(.horizontal)
         }
     }
     
@@ -41,29 +135,103 @@ struct ExpenseListView: View {
                             systemImage: "tray",
                             description: Text("Add your first expense.")
                         )
+                    } else if shouldShowNoResultsForFilters {
+                        // No results after applying filters
+                        filterEmptyStateView
                     } else {
                         // No search results
                         ContentUnavailableView.search
                     }
                 } else {
-                    List {
-                        ForEach(filteredExpenses) { expense in
-                            ExpenseRowView(expense: expense)
-                                .contentShape(Rectangle())
-                                .onTapGesture {
-                                    expenseToEdit = expense
-                                    showingEditSheet = true
+                    VStack(spacing: 0) {
+                        // Active filters indicator
+                        if hasActiveFilters, let description = activeFiltersDescription {
+                            HStack {
+                                Text(description)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(2)
+                                
+                                Spacer()
+                                
+                                Button("Clear") {
+                                    clearAllFilters()
                                 }
-                                .accessibilityAddTraits(.isButton)
+                                .font(.caption)
+                                .foregroundStyle(.blue)
+                            }
+                            .padding(.horizontal)
+                            .padding(.vertical, 8)
+                            .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
+                            .padding(.horizontal)
+                            .padding(.bottom, 8)
                         }
-                        .onDelete(perform: deleteExpenses)
+                        
+                        List {
+                            ForEach(filteredExpenses) { expense in
+                                ExpenseRowView(expense: expense)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
+                                        expenseToEdit = expense
+                                        showingEditSheet = true
+                                    }
+                                    .accessibilityAddTraits(.isButton)
+                            }
+                            .onDelete(perform: deleteExpenses)
+                        }
+                        .animation(.snappy, value: filteredExpenses)
                     }
-                    .animation(.snappy, value: filteredExpenses)
                 }
             }
-            .navigationTitle("Expenses")
+            .navigationTitle(navigationTitle)
             .searchable(text: $searchText, prompt: "Search expenses...")
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Menu {
+                        // Date Range Filters
+                        ForEach(DateRangeFilter.allCases.filter { $0 != .custom }, id: \.self) { filter in
+                            Button(filter.displayName) {
+                                selectDateRangeFilter(filter)
+                            }
+                        }
+                        
+                        Button("Custom…") {
+                            showingCustomDateSheet = true
+                        }
+                        
+                        Divider()
+                        
+                        // Category Filters
+                        Button("All Categories") {
+                            selectedCategoryName = nil
+                        }
+                        
+                        ForEach(categories, id: \.name) { category in
+                            Button(category.name) {
+                                selectedCategoryName = category.name
+                            }
+                        }
+                        
+                        Divider()
+                        
+                        Button("Clear Filters") {
+                            clearAllFilters()
+                        }
+                        
+                        #if DEBUG
+                        if expenses.isEmpty {
+                            Divider()
+                            Button("Insert Sample Expenses (Debug)") {
+                                insertSampleExpenses()
+                            }
+                        }
+                        #endif
+                    } label: {
+                        Image(systemName: hasActiveFilters ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+                            .foregroundStyle(hasActiveFilters ? .blue : .primary)
+                    }
+                }
+                
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         showingAddSheet = true
@@ -71,20 +239,6 @@ struct ExpenseListView: View {
                         Image(systemName: "plus")
                     }
                 }
-                
-                #if DEBUG
-                ToolbarItem(placement: .topBarLeading) {
-                    if expenses.isEmpty {
-                        Menu {
-                            Button("Insert Sample Expenses (Debug)") {
-                                insertSampleExpenses()
-                            }
-                        } label: {
-                            Image(systemName: "ellipsis.circle")
-                        }
-                    }
-                }
-                #endif
             }
             .sheet(isPresented: $showingAddSheet) {
                 AddExpenseSheet()
@@ -92,6 +246,16 @@ struct ExpenseListView: View {
             .sheet(isPresented: $showingEditSheet) {
                 if let expenseToEdit = expenseToEdit {
                     AddExpenseSheet(expense: expenseToEdit)
+                }
+            }
+            .sheet(isPresented: $showingCustomDateSheet) {
+                CustomDateRangeSheet(
+                    initialStart: customStartDate,
+                    initialEnd: customEndDate
+                ) { start, end in
+                    customStartDate = start
+                    customEndDate = end
+                    filterTypeRaw = DateRangeFilter.custom.rawValue
                 }
             }
             .alert("Delete Expense", isPresented: $showingDeleteConfirmation) {
@@ -127,6 +291,22 @@ struct ExpenseListView: View {
         }
         
         self.expenseToDelete = nil
+    }
+    
+    private func selectDateRangeFilter(_ filter: DateRangeFilter) {
+        filterTypeRaw = filter.rawValue
+        // Clear custom dates when switching to preset filters
+        if filter != .custom {
+            customStartDate = nil
+            customEndDate = nil
+        }
+    }
+    
+    private func clearAllFilters() {
+        filterTypeRaw = DateRangeFilter.defaultFilter.rawValue
+        selectedCategoryName = nil
+        customStartDate = nil
+        customEndDate = nil
     }
     
     #if DEBUG

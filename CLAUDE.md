@@ -121,3 +121,4 @@ CLAUDE.md                          # AI contributor guidance
 - Repo initialized and scaffolded.
 - `feature/swiftdata-setup` branch is active for first feature: SwiftData models + container setup.
 - Ready for incremental development via issues + branches.
+- You know how to make PR's. Only ask me for help with creating a PR if you need questions answered. You are hearby allowed to create PR's if I give you the command in the intitial plan instructions. ok?
