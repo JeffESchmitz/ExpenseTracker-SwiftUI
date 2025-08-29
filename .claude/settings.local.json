@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Read(/Users/Z004S1K/.claude/**)"
+      "Read(/Users/Z004S1K/.claude/**)",
+      "Bash(mkdir:*)",
+      "mcp__XcodeBuildMCP__build_sim",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []
