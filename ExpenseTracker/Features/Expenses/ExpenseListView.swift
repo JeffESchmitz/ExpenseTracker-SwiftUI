@@ -12,8 +12,10 @@ struct ExpenseListView: View {
     @Query(sort: \Expense.date, order: .reverse) private var expenses: [Expense]
     @State private var searchText = ""
     @State private var showingAddSheet = false
+    @State private var showingEditSheet = false
     @State private var showingDeleteConfirmation = false
     @State private var expenseToDelete: Expense?
+    @State private var expenseToEdit: Expense?
     @Environment(\.modelContext) private var modelContext
     
     private var filteredExpenses: [Expense] {
@@ -47,6 +49,12 @@ struct ExpenseListView: View {
                     List {
                         ForEach(filteredExpenses) { expense in
                             ExpenseRowView(expense: expense)
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    expenseToEdit = expense
+                                    showingEditSheet = true
+                                }
+                                .accessibilityAddTraits(.isButton)
                         }
                         .onDelete(perform: deleteExpenses)
                     }
@@ -80,6 +88,11 @@ struct ExpenseListView: View {
             }
             .sheet(isPresented: $showingAddSheet) {
                 AddExpenseSheet()
+            }
+            .sheet(isPresented: $showingEditSheet) {
+                if let expenseToEdit = expenseToEdit {
+                    AddExpenseSheet(expense: expenseToEdit)
+                }
             }
             .alert("Delete Expense", isPresented: $showingDeleteConfirmation) {
                 Button("Delete", role: .destructive) {
