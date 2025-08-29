@@ -1,0 +1,4 @@
+git add .github/workflows/ios-ci.yml
+git commit -m "ci: add GitHub Actions workflow for iOS build and tests"
+git push -u origin feature/ci-setup
+
