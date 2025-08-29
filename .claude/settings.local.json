@@ -4,7 +4,13 @@
       "Read(/Users/Z004S1K/.claude/**)",
       "Bash(mkdir:*)",
       "mcp__XcodeBuildMCP__build_sim",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(gh pr create:*)",
+      "Bash(git pull:*)",
+      "Bash(git branch:*)",
+      "Bash(gh issue list:*)",
+      "Bash(gh issue view:*)",
+      "mcp__XcodeBuildMCP__get_sim_app_path"
     ],
     "deny": [],
     "ask": []
