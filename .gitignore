@@ -1,15 +1,35 @@
-.DS_Store
+# --- IDE / Editor / Tooling ---
+# Claude Code local state
+.claude/
+
+# VS Code settings and workspace files
+.vscode/
+*.code-workspace
+
+# JetBrains IDEs (AppCode, CLion, IntelliJ, etc.)
+.idea/
+
+# Xcode user state (already partly ignored, but ensure)
+*.xcuserstate
+*.xcworkspace/xcuserdata/
 xcuserdata/
+
+# macOS Finder metadata
+.DS_Store
+
+# Other common tooling
+.env.local
+.envrc
+
+# --- Xcode Build Products ---
 DerivedData/
 build/
-*.xcuserstate
 /.build
 /Packages
 *.xcresult
+
+# --- Fastlane ---
 fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots
 fastlane/test_output
-
-# Claude Code local settings
-.claude/
