@@ -1,0 +1,9 @@
+name: Hello CI
+
+on: [push, pull_request]
+
+jobs:
+  say-hello:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "✅ CI is running!"
