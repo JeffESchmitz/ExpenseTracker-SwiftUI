@@ -1,11 +1,17 @@
-# 💰 ExpenseTracker-SwiftUI
+<div align="center">
+  <img src=".github/assets/expense-tracker-hero.png" alt="ExpenseTracker App" width="600">
+  
+  # 💰 ExpenseTracker-SwiftUI
+  
+  **A modern SwiftUI expense tracking app built with SwiftData and Swift Charts**
+  
+  Track your spending with beautiful visualizations, smart filtering, and comprehensive category management.
 
-A modern SwiftUI expense tracking app built with SwiftData and Swift Charts. Track your spending with beautiful visualizations, smart filtering, and comprehensive category management.
-
-![iOS 18.0+](https://img.shields.io/badge/iOS-18.0+-blue.svg)
-![SwiftUI](https://img.shields.io/badge/SwiftUI-5.0-orange.svg)
-![SwiftData](https://img.shields.io/badge/SwiftData-iOS18-green.svg)
-![Swift Charts](https://img.shields.io/badge/Swift_Charts-5.0-red.svg)
+  ![iOS 18.0+](https://img.shields.io/badge/iOS-18.0+-blue.svg)
+  ![SwiftUI](https://img.shields.io/badge/SwiftUI-5.0-orange.svg)
+  ![SwiftData](https://img.shields.io/badge/SwiftData-iOS18-green.svg)
+  ![Swift Charts](https://img.shields.io/badge/Swift_Charts-5.0-red.svg)
+</div>
 
 ## ✨ Features
 
