@@ -1,4 +1,7 @@
 <div align="center">
+
+<img width="512" height="512" alt="ExpenseTracker-blue" src="https://github.com/user-attachments/assets/2b81880e-257a-4edd-b492-08e7c9f881cb" />
+
   
 # 💰 ExpenseTracker-SwiftUI
 
