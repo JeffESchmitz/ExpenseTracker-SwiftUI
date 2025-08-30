@@ -11,17 +11,27 @@ import SwiftData
 struct DemoDataService {
     
     static func insertDemoData(modelContext: ModelContext, categories: [Category]) -> Int {
+        print("🎭 DemoDataService: Starting demo data insertion")
+        print("🎭 DemoDataService: Categories count: \(categories.count)")
+        
         // Ensure we don't double-seed
         let existingDemoCount = countDemoExpenses(modelContext: modelContext)
+        print("🎭 DemoDataService: Existing demo expenses: \(existingDemoCount)")
+        
         if existingDemoCount > 0 {
+            print("🎭 DemoDataService: Demo data already exists, returning existing count")
             return existingDemoCount
         }
         
-        guard !categories.isEmpty else { return 0 }
+        guard !categories.isEmpty else {
+            print("🎭 DemoDataService: No categories found, cannot generate demo data")
+            return 0
+        }
         
         let calendar = Calendar.current
         let now = Date()
         let expenseCount = Int.random(in: 80...120)
+        print("🎭 DemoDataService: Will create \(expenseCount) demo expenses")
         
         // Sample notes for realistic variety
         let sampleNotes = [
@@ -83,9 +93,10 @@ struct DemoDataService {
         
         do {
             try modelContext.save()
+            print("🎭 DemoDataService: Successfully created \(createdExpenses) demo expenses")
             return createdExpenses
         } catch {
-            print("Failed to save demo expenses: \(error)")
+            print("🎭 DemoDataService: Failed to save demo expenses: \(error)")
             return 0
         }
     }
@@ -118,9 +129,11 @@ struct DemoDataService {
         
         do {
             let demoExpenses = try modelContext.fetch(fetchDescriptor)
-            return demoExpenses.count
+            let count = demoExpenses.count
+            print("🎭 DemoDataService: Demo expense count: \(count)")
+            return count
         } catch {
-            print("Failed to count demo expenses: \(error)")
+            print("🎭 DemoDataService: Failed to count demo expenses: \(error)")
             return 0
         }
     }

@@ -27,7 +27,12 @@ struct ExpenseTrackerApp: App {
         let descriptor = FetchDescriptor<Category>()
         let existingCategories = try? context.fetch(descriptor)
         
-        guard existingCategories?.isEmpty == true else { return }
+        print("🌱 App: Existing categories count: \(existingCategories?.count ?? -1)")
+        
+        guard existingCategories?.isEmpty == true else {
+            print("🌱 App: Categories already exist, skipping seed")
+            return
+        }
         
         // Create default categories
         let defaultCategories = [
@@ -39,11 +44,18 @@ struct ExpenseTrackerApp: App {
             Category(name: "Other", color: "gray", symbolName: "ellipsis.circle.fill")
         ]
         
+        print("🌱 App: Creating \(defaultCategories.count) default categories")
+        
         for category in defaultCategories {
             context.insert(category)
         }
         
-        try? context.save()
+        do {
+            try context.save()
+            print("🌱 App: Successfully seeded default categories")
+        } catch {
+            print("🌱 App: Failed to save default categories: \(error)")
+        }
     }
     
     private var modelContainer: ModelContainer {

@@ -14,7 +14,11 @@
       "mcp__XcodeBuildMCP__test_sim",
       "WebFetch(domain:github.com)",
       "Bash(find:*)",
-      "Bash(xcodebuild:*)"
+      "Bash(xcodebuild:*)",
+      "mcp__XcodeBuildMCP__install_app_sim",
+      "mcp__XcodeBuildMCP__boot_sim",
+      "mcp__XcodeBuildMCP__open_sim",
+      "mcp__XcodeBuildMCP__clean"
     ],
     "deny": [],
     "ask": []

@@ -29,6 +29,8 @@ struct SettingsView: View {
     @State private var showingImportResult = false
     @State private var importResult: CSVService.ImportResult?
     @State private var showingDemoDeleteConfirmation = false
+    @State private var showingDemoDataResult = false
+    @State private var demoDataResultMessage = ""
     
     private var selectedFilter: DateRangeFilter {
         DateRangeFilter(rawValue: filterTypeRaw) ?? .defaultFilter
@@ -297,6 +299,11 @@ struct SettingsView: View {
             } message: {
                 Text("This will permanently remove all demo expenses. Your real expenses will remain unchanged.")
             }
+            .alert("Demo Data Result", isPresented: $showingDemoDataResult) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(demoDataResultMessage)
+            }
         }
     }
     
@@ -341,13 +348,31 @@ struct SettingsView: View {
     }
     
     private func generateDemoData() {
+        print("⚙️ SettingsView: Generate demo data button pressed")
+        print("⚙️ SettingsView: Categories available: \(categories.count)")
+        for category in categories {
+            print("⚙️ SettingsView: Category: \(category.name)")
+        }
+        
         let count = DemoDataService.insertDemoData(modelContext: modelContext, categories: categories)
+        print("⚙️ SettingsView: Demo data generation returned count: \(count)")
         
         if count > 0 {
+            print("⚙️ SettingsView: Demo data generated successfully, playing haptic")
+            demoDataResultMessage = "Successfully generated \(count) demo expenses!\n\nNote: Demo expenses span 6-12 months. Use 'All Time' filter in Expenses tab to see them all."
             // Success haptic
             let notificationFeedback = UINotificationFeedbackGenerator()
             notificationFeedback.notificationOccurred(.success)
+        } else {
+            print("⚙️ SettingsView: Demo data generation failed or returned 0")
+            if categories.isEmpty {
+                demoDataResultMessage = "Failed: No categories found. Please add categories first."
+            } else {
+                demoDataResultMessage = "Failed to generate demo data. Check console for details."
+            }
         }
+        
+        showingDemoDataResult = true
     }
     
     private func removeDemoData() {
