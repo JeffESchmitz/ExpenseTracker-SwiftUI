@@ -48,9 +48,31 @@ struct ExpenseTrackerApp: App {
     
     private var modelContainer: ModelContainer {
         do {
-            return try ModelContainer(for: Expense.self, Category.self)
+            let schema = Schema([
+                Expense.self,
+                Category.self,
+            ])
+            let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+            return try ModelContainer(for: schema, configurations: [modelConfiguration])
         } catch {
-            fatalError("Failed to create ModelContainer: \(error)")
+            // If there's a schema conflict, try to create a fresh container
+            // This will happen when we add new fields to existing models
+            print("Schema migration needed. Attempting to reset data store...")
+            
+            // Try to delete the old store file and create new one
+            let url = URL.applicationSupportDirectory.appendingPathComponent("default.store")
+            try? FileManager.default.removeItem(at: url)
+            
+            do {
+                let schema = Schema([
+                    Expense.self,
+                    Category.self,
+                ])
+                let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+                return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            } catch {
+                fatalError("Failed to create ModelContainer even after reset: \(error)")
+            }
         }
     }
 }
