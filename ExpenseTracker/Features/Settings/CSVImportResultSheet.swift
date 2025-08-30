@@ -2,7 +2,7 @@
 //  CSVImportResultSheet.swift
 //  ExpenseTracker
 //
-//  Created by Jeffrey.Schmitz2 on 8/30/25.
+//  Created by Jeff E. Schmitz on 8/30/25.
 //
 
 import SwiftUI
