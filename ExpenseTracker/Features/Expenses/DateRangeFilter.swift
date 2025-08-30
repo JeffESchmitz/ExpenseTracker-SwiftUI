@@ -8,6 +8,7 @@
 import Foundation
 
 enum DateRangeFilter: String, CaseIterable {
+    case allTime
     case thisMonth
     case lastMonth
     case last7Days
@@ -17,6 +18,7 @@ enum DateRangeFilter: String, CaseIterable {
     
     var displayName: String {
         switch self {
+        case .allTime: return "All Time"
         case .thisMonth: return "This Month"
         case .lastMonth: return "Last Month"
         case .last7Days: return "Last 7 Days"
@@ -28,6 +30,7 @@ enum DateRangeFilter: String, CaseIterable {
     
     var shortDisplayName: String {
         switch self {
+        case .allTime: return "All Time"
         case .thisMonth: return "This Month"
         case .lastMonth: return "Last Month"
         case .last7Days: return "Last 7 Days"
@@ -42,6 +45,8 @@ enum DateRangeFilter: String, CaseIterable {
         let now = Date()
         
         switch self {
+        case .allTime:
+            return nil // No date filtering
         case .thisMonth:
             let startOfMonth = calendar.dateInterval(of: .month, for: now)?.start ?? now
             let endOfMonth = calendar.dateInterval(of: .month, for: now)?.end ?? now
@@ -88,5 +93,5 @@ enum DateRangeFilter: String, CaseIterable {
         }
     }
     
-    static let defaultFilter: DateRangeFilter = .thisMonth
+    static let defaultFilter: DateRangeFilter = .allTime
 }

@@ -27,7 +27,12 @@ struct ExpenseTrackerApp: App {
         let descriptor = FetchDescriptor<Category>()
         let existingCategories = try? context.fetch(descriptor)
         
-        guard existingCategories?.isEmpty == true else { return }
+        print("🌱 App: Existing categories count: \(existingCategories?.count ?? -1)")
+        
+        guard existingCategories?.isEmpty == true else {
+            print("🌱 App: Categories already exist, skipping seed")
+            return
+        }
         
         // Create default categories
         let defaultCategories = [
@@ -39,18 +44,47 @@ struct ExpenseTrackerApp: App {
             Category(name: "Other", color: "gray", symbolName: "ellipsis.circle.fill")
         ]
         
+        print("🌱 App: Creating \(defaultCategories.count) default categories")
+        
         for category in defaultCategories {
             context.insert(category)
         }
         
-        try? context.save()
+        do {
+            try context.save()
+            print("🌱 App: Successfully seeded default categories")
+        } catch {
+            print("🌱 App: Failed to save default categories: \(error)")
+        }
     }
     
     private var modelContainer: ModelContainer {
         do {
-            return try ModelContainer(for: Expense.self, Category.self)
+            let schema = Schema([
+                Expense.self,
+                Category.self,
+            ])
+            let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+            return try ModelContainer(for: schema, configurations: [modelConfiguration])
         } catch {
-            fatalError("Failed to create ModelContainer: \(error)")
+            // If there's a schema conflict, try to create a fresh container
+            // This will happen when we add new fields to existing models
+            print("Schema migration needed. Attempting to reset data store...")
+            
+            // Try to delete the old store file and create new one
+            let url = URL.applicationSupportDirectory.appendingPathComponent("default.store")
+            try? FileManager.default.removeItem(at: url)
+            
+            do {
+                let schema = Schema([
+                    Expense.self,
+                    Category.self,
+                ])
+                let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+                return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            } catch {
+                fatalError("Failed to create ModelContainer even after reset: \(error)")
+            }
         }
     }
 }

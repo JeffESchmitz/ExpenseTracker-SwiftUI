@@ -21,10 +21,16 @@ struct SettingsView: View {
     @AppStorage("selectedCategoryName") private var selectedCategoryName: String?
     @AppStorage("searchText") private var searchText = ""
     
+    // Demo mode persistence
+    @AppStorage("demoModeEnabled") private var demoModeEnabled = false
+    
     @State private var exportFileURL: URL?
     @State private var showingImportPicker = false
     @State private var showingImportResult = false
     @State private var importResult: CSVService.ImportResult?
+    @State private var showingDemoDeleteConfirmation = false
+    @State private var showingDemoDataResult = false
+    @State private var demoDataResultMessage = ""
     
     private var selectedFilter: DateRangeFilter {
         DateRangeFilter(rawValue: filterTypeRaw) ?? .defaultFilter
@@ -67,6 +73,99 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
+                // Demo Mode Section
+                Section {
+                    HStack {
+                        Image(systemName: "theatermasks")
+                            .foregroundStyle(demoModeEnabled ? .orange : .secondary)
+                            .frame(width: 24)
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Demo Mode")
+                                .font(.body)
+                            if demoModeEnabled {
+                                Text("Show realistic sample expenses")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            } else {
+                                Text("Use your real expense data")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        
+                        Spacer()
+                        
+                        Toggle("", isOn: $demoModeEnabled)
+                    }
+                    
+                    // Demo actions
+                    if demoModeEnabled {
+                        let demoCount = DemoDataService.countDemoExpenses(modelContext: modelContext)
+                        
+                        if demoCount == 0 {
+                            HStack {
+                                Image(systemName: "plus.circle")
+                                    .foregroundStyle(.green)
+                                    .frame(width: 24)
+                                
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Generate Demo Data")
+                                        .font(.body)
+                                    Text("Create 80-120 sample expenses")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                                
+                                Spacer()
+                                
+                                Button("Generate") {
+                                    generateDemoData()
+                                }
+                                .font(.subheadline)
+                                .foregroundStyle(.green)
+                            }
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                generateDemoData()
+                            }
+                        } else {
+                            HStack {
+                                Image(systemName: "trash")
+                                    .foregroundStyle(.red)
+                                    .frame(width: 24)
+                                
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Remove Demo Data")
+                                        .font(.body)
+                                    Text("\(demoCount) demo expense\(demoCount == 1 ? "" : "s") found")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                                
+                                Spacer()
+                                
+                                Button("Remove") {
+                                    showingDemoDeleteConfirmation = true
+                                }
+                                .font(.subheadline)
+                                .foregroundStyle(.red)
+                            }
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                showingDemoDeleteConfirmation = true
+                            }
+                        }
+                    }
+                    
+                } header: {
+                    Text("Demo Mode")
+                } footer: {
+                    Text("Demo mode shows realistic sample data for exploring the app. Your real expenses are preserved.")
+                        .font(.caption)
+                }
+                
+                // Data Section
                 Section {
                     // Export CSV
                     HStack {
@@ -139,6 +238,7 @@ struct SettingsView: View {
                         .font(.caption)
                 }
                 
+                // App Info Section
                 Section {
                     HStack {
                         Image(systemName: "info.circle")
@@ -155,8 +255,27 @@ struct SettingsView: View {
                         
                         Spacer()
                     }
+                    
+                    if let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String,
+                       let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String {
+                        HStack {
+                            Image(systemName: "number")
+                                .foregroundStyle(.secondary)
+                                .frame(width: 24)
+                            
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Version")
+                                    .font(.body)
+                                Text("\(appVersion) (\(buildNumber))")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            
+                            Spacer()
+                        }
+                    }
                 } header: {
-                    Text("About")
+                    Text("App Info")
                 }
             }
             .navigationTitle("Settings")
@@ -171,6 +290,19 @@ struct SettingsView: View {
                 if let result = importResult {
                     CSVImportResultSheet(result: result)
                 }
+            }
+            .alert("Remove Demo Data", isPresented: $showingDemoDeleteConfirmation) {
+                Button("Remove", role: .destructive) {
+                    removeDemoData()
+                }
+                Button("Cancel", role: .cancel) { }
+            } message: {
+                Text("This will permanently remove all demo expenses. Your real expenses will remain unchanged.")
+            }
+            .alert("Demo Data Result", isPresented: $showingDemoDataResult) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(demoDataResultMessage)
             }
         }
     }
@@ -212,6 +344,44 @@ struct SettingsView: View {
                 errors: ["Failed to import: \(error.localizedDescription)"]
             )
             showingImportResult = true
+        }
+    }
+    
+    private func generateDemoData() {
+        print("⚙️ SettingsView: Generate demo data button pressed")
+        print("⚙️ SettingsView: Categories available: \(categories.count)")
+        for category in categories {
+            print("⚙️ SettingsView: Category: \(category.name)")
+        }
+        
+        let count = DemoDataService.insertDemoData(modelContext: modelContext, categories: categories)
+        print("⚙️ SettingsView: Demo data generation returned count: \(count)")
+        
+        if count > 0 {
+            print("⚙️ SettingsView: Demo data generated successfully, playing haptic")
+            demoDataResultMessage = "Successfully generated \(count) demo expenses!\n\nNote: Demo expenses span 6-12 months. Use 'All Time' filter in Expenses tab to see them all."
+            // Success haptic
+            let notificationFeedback = UINotificationFeedbackGenerator()
+            notificationFeedback.notificationOccurred(.success)
+        } else {
+            print("⚙️ SettingsView: Demo data generation failed or returned 0")
+            if categories.isEmpty {
+                demoDataResultMessage = "Failed: No categories found. Please add categories first."
+            } else {
+                demoDataResultMessage = "Failed to generate demo data. Check console for details."
+            }
+        }
+        
+        showingDemoDataResult = true
+    }
+    
+    private func removeDemoData() {
+        let count = DemoDataService.removeDemoData(modelContext: modelContext)
+        
+        if count > 0 {
+            // Success haptic
+            let notificationFeedback = UINotificationFeedbackGenerator()
+            notificationFeedback.notificationOccurred(.success)
         }
     }
 }
