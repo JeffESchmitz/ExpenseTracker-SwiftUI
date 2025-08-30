@@ -19,6 +19,7 @@ struct ExpenseListView: View {
     @State private var showingCustomDateSheet = false
     @State private var expenseToDelete: Expense?
     @State private var expenseToEdit: Expense?
+    @State private var exportFileURL: URL?
     @Environment(\.modelContext) private var modelContext
     
     // Filter persistence with AppStorage
@@ -233,10 +234,28 @@ struct ExpenseListView: View {
                 }
                 
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showingAddSheet = true
-                    } label: {
-                        Image(systemName: "plus")
+                    HStack(spacing: 8) {
+                        // Export button (optional nice-to-have)
+                        if !filteredExpenses.isEmpty {
+                            if let url = exportFileURL {
+                                ShareLink(item: url) {
+                                    Image(systemName: "square.and.arrow.up")
+                                }
+                            } else {
+                                Button {
+                                    exportCSV()
+                                } label: {
+                                    Image(systemName: "square.and.arrow.up")
+                                }
+                            }
+                        }
+                        
+                        // Add expense button
+                        Button {
+                            showingAddSheet = true
+                        } label: {
+                            Image(systemName: "plus")
+                        }
                     }
                 }
             }
@@ -307,6 +326,18 @@ struct ExpenseListView: View {
         selectedCategoryName = nil
         customStartDate = nil
         customEndDate = nil
+    }
+    
+    private func exportCSV() {
+        let csvContent = CSVService.exportExpenses(filteredExpenses)
+        
+        if let fileURL = CSVService.createTempCSVFile(content: csvContent) {
+            exportFileURL = fileURL
+            
+            // Success haptic
+            let notificationFeedback = UINotificationFeedbackGenerator()
+            notificationFeedback.notificationOccurred(.success)
+        }
     }
     
     #if DEBUG

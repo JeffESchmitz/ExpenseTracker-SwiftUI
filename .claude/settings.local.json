@@ -13,7 +13,8 @@
       "mcp__XcodeBuildMCP__get_sim_app_path",
       "mcp__XcodeBuildMCP__test_sim",
       "WebFetch(domain:github.com)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(xcodebuild:*)"
     ],
     "deny": [],
     "ask": []
