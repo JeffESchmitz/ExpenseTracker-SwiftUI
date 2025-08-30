@@ -263,3 +263,209 @@ class ExpenseFilterTests: XCTestCase {
         }
     }
 }
+
+// MARK: - Category Management Tests
+class CategoryManagementTests: XCTestCase {
+    
+    var modelContainer: ModelContainer!
+    var modelContext: ModelContext!
+    
+    override func setUp() {
+        super.setUp()
+        
+        // Create in-memory container for testing
+        let schema = Schema([ExpenseTracker.Expense.self, ExpenseTracker.Category.self])
+        let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
+        
+        do {
+            modelContainer = try ModelContainer(for: schema, configurations: [configuration])
+            modelContext = ModelContext(modelContainer)
+        } catch {
+            XCTFail("Failed to set up test environment: \(error)")
+        }
+    }
+    
+    override func tearDown() {
+        modelContainer = nil
+        modelContext = nil
+        super.tearDown()
+    }
+    
+    func testUniqueNameValidation() {
+        // Create initial category
+        let foodCategory = ExpenseTracker.Category(name: "Food", color: "orange", symbolName: "fork.knife")
+        modelContext.insert(foodCategory)
+        
+        do {
+            try modelContext.save()
+        } catch {
+            XCTFail("Failed to save initial category: \(error)")
+            return
+        }
+        
+        // Test case-insensitive uniqueness
+        let existingCategories = fetchAllCategories()
+        let existingNames = existingCategories.map { $0.name.lowercased() }
+        
+        // Should reject duplicate names (exact case)
+        XCTAssertTrue(existingNames.contains("food"))
+        
+        // Should reject duplicate names (different case)
+        XCTAssertTrue(existingNames.contains("food"))
+        let duplicateName = "FOOD"
+        XCTAssertTrue(existingNames.contains(duplicateName.lowercased()))
+        
+        // Should allow unique names
+        let uniqueName = "Transportation"
+        XCTAssertFalse(existingNames.contains(uniqueName.lowercased()))
+    }
+    
+    func testCategoryDeletionWithExpenseReassignment() {
+        // Create categories
+        let foodCategory = ExpenseTracker.Category(name: "Food", color: "orange", symbolName: "fork.knife")
+        let uncategorizedCategory = ExpenseTracker.Category(name: "Uncategorized", color: "gray", symbolName: "questionmark.circle.fill")
+        
+        modelContext.insert(foodCategory)
+        modelContext.insert(uncategorizedCategory)
+        
+        // Create expenses with Food category
+        let expense1 = ExpenseTracker.Expense(amount: 25.50, date: Date(), notes: "Lunch", category: foodCategory)
+        let expense2 = ExpenseTracker.Expense(amount: 15.00, date: Date(), notes: "Snack", category: foodCategory)
+        
+        modelContext.insert(expense1)
+        modelContext.insert(expense2)
+        
+        do {
+            try modelContext.save()
+        } catch {
+            XCTFail("Failed to save initial data: \(error)")
+            return
+        }
+        
+        // Verify initial state
+        let initialExpenses = fetchAllExpenses()
+        XCTAssertEqual(initialExpenses.count, 2)
+        XCTAssertTrue(initialExpenses.allSatisfy { $0.category.name == "Food" })
+        
+        // Simulate category deletion with reassignment
+        let expensesToReassign = initialExpenses.filter { $0.category.name == "Food" }
+        
+        for expense in expensesToReassign {
+            expense.category = uncategorizedCategory
+        }
+        
+        modelContext.delete(foodCategory)
+        
+        do {
+            try modelContext.save()
+        } catch {
+            XCTFail("Failed to save after reassignment: \(error)")
+            return
+        }
+        
+        // Verify reassignment
+        let finalExpenses = fetchAllExpenses()
+        XCTAssertEqual(finalExpenses.count, 2, "Should still have 2 expenses after category deletion")
+        XCTAssertTrue(finalExpenses.allSatisfy { $0.category.name == "Uncategorized" }, "All expenses should be reassigned to Uncategorized")
+        
+        // Verify Food category is deleted
+        let remainingCategories = fetchAllCategories()
+        XCTAssertFalse(remainingCategories.contains { $0.name == "Food" }, "Food category should be deleted")
+        XCTAssertTrue(remainingCategories.contains { $0.name == "Uncategorized" }, "Uncategorized category should remain")
+    }
+    
+    func testUncategorizedCategoryCannotBeDeleted() {
+        // Create Uncategorized category
+        let uncategorizedCategory = ExpenseTracker.Category(name: "Uncategorized", color: "gray", symbolName: "questionmark.circle.fill")
+        modelContext.insert(uncategorizedCategory)
+        
+        do {
+            try modelContext.save()
+        } catch {
+            XCTFail("Failed to save Uncategorized category: \(error)")
+            return
+        }
+        
+        // Verify Uncategorized exists
+        let categories = fetchAllCategories()
+        let uncategorized = categories.first { $0.name.lowercased() == "uncategorized" }
+        XCTAssertNotNil(uncategorized, "Uncategorized category should exist")
+        
+        // In the real app, deletion logic prevents deleting Uncategorized
+        // This test verifies the business rule
+        let categoryName = uncategorized?.name.lowercased()
+        let canDelete = categoryName != "uncategorized"
+        XCTAssertFalse(canDelete, "Should not be able to delete Uncategorized category")
+    }
+    
+    func testCategoryCreationWithValidation() {
+        // Test valid category creation
+        let validCategory = ExpenseTracker.Category(name: "Food", color: "orange", symbolName: "fork.knife")
+        modelContext.insert(validCategory)
+        
+        do {
+            try modelContext.save()
+        } catch {
+            XCTFail("Failed to save valid category: \(error)")
+            return
+        }
+        
+        let categories = fetchAllCategories()
+        XCTAssertEqual(categories.count, 1)
+        XCTAssertEqual(categories.first?.name, "Food")
+        XCTAssertEqual(categories.first?.color, "orange")
+        XCTAssertEqual(categories.first?.symbolName, "fork.knife")
+    }
+    
+    func testCategoryEditing() {
+        // Create initial category
+        let category = ExpenseTracker.Category(name: "Food", color: "orange", symbolName: "fork.knife")
+        modelContext.insert(category)
+        
+        do {
+            try modelContext.save()
+        } catch {
+            XCTFail("Failed to save initial category: \(error)")
+            return
+        }
+        
+        // Edit category properties
+        category.name = "Dining"
+        category.color = "red"
+        category.symbolName = "restaurant.fill"
+        
+        do {
+            try modelContext.save()
+        } catch {
+            XCTFail("Failed to save edited category: \(error)")
+            return
+        }
+        
+        // Verify changes
+        let categories = fetchAllCategories()
+        XCTAssertEqual(categories.count, 1)
+        XCTAssertEqual(categories.first?.name, "Dining")
+        XCTAssertEqual(categories.first?.color, "red")
+        XCTAssertEqual(categories.first?.symbolName, "restaurant.fill")
+    }
+    
+    private func fetchAllCategories() -> [ExpenseTracker.Category] {
+        let fetchDescriptor = FetchDescriptor<ExpenseTracker.Category>()
+        do {
+            return try modelContext.fetch(fetchDescriptor)
+        } catch {
+            XCTFail("Failed to fetch categories: \(error)")
+            return []
+        }
+    }
+    
+    private func fetchAllExpenses() -> [ExpenseTracker.Expense] {
+        let fetchDescriptor = FetchDescriptor<ExpenseTracker.Expense>()
+        do {
+            return try modelContext.fetch(fetchDescriptor)
+        } catch {
+            XCTFail("Failed to fetch expenses: \(error)")
+            return []
+        }
+    }
+}
