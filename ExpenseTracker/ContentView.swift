@@ -2,7 +2,7 @@
 //  ContentView.swift
 //  ExpenseTracker
 //
-//  Created by Jeffrey.Schmitz2 on 8/29/25.
+//  Created by Jeff E. Schmitz on 8/29/25.
 //
 
 import SwiftUI
