@@ -21,7 +21,7 @@ jobs:
       timeout-minutes: 10
       run: |
         xcodebuild -project ExpenseTracker.xcodeproj \
-                   -target ExpenseTracker \
+                   -scheme ExpenseTracker \
                    -destination 'platform=iOS Simulator,name=iPhone SE (3rd generation),OS=18.6' \
                    build \
                    CODE_SIGNING_ALLOWED=NO
