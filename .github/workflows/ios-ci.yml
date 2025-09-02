@@ -1,4 +1,32 @@
-git add .github/workflows/ios-ci.yml
-git commit -m "ci: add GitHub Actions workflow for iOS build and tests"
-git push -u origin feature/ci-setup
+name: iOS CI
 
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Show Xcode version
+      run: xcodebuild -version
+      
+    - name: Build project
+      run: |
+        xcodebuild -project ExpenseTracker.xcodeproj \
+                   -scheme ExpenseTracker \
+                   -destination 'platform=iOS Simulator,name=iPhone 15 Pro,OS=latest' \
+                   build
+    
+    - name: Run tests
+      run: |
+        xcodebuild -project ExpenseTracker.xcodeproj \
+                   -scheme ExpenseTracker \
+                   -destination 'platform=iOS Simulator,name=iPhone 15 Pro,OS=latest' \
+                   test
