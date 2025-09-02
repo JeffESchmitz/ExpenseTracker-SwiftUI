@@ -21,6 +21,9 @@ xcuserdata/
 .env.local
 .envrc
 
+# Instructions directory (contains project documentation/notes)
+instructions/
+
 # --- Xcode Build Products ---
 DerivedData/
 build/
