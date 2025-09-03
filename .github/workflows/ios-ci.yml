@@ -37,8 +37,8 @@ jobs:
           
       - name: Set simulator destination
         run: |
-          echo "DEST=generic/platform=iOS Simulator" >> $GITHUB_ENV
-          echo "Using generic iOS Simulator destination"
+          echo "DEST=platform=iOS Simulator,name=iPhone SE (3rd generation)" >> $GITHUB_ENV
+          echo "Using iPhone SE (3rd generation) simulator"
 
       - name: Build & Test (with result bundle)
         if: ${{ env.DEST != '' }}
