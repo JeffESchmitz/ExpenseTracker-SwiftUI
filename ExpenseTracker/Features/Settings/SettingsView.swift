@@ -16,8 +16,8 @@ struct SettingsView: View {
     
     // Filter persistence - read from same AppStorage as ExpenseListView
     @AppStorage("filterType") private var filterTypeRaw = DateRangeFilter.defaultFilter.rawValue
-    @AppStorage("customStartDate") private var customStartDate: Date?
-    @AppStorage("customEndDate") private var customEndDate: Date?
+    @AppStorage("customStartDateTimestamp") private var customStartDateTimestamp: Double = 0
+    @AppStorage("customEndDateTimestamp") private var customEndDateTimestamp: Double = 0
     @AppStorage("selectedCategoryName") private var selectedCategoryName: String?
     @AppStorage("searchText") private var searchText = ""
     
@@ -34,6 +34,24 @@ struct SettingsView: View {
     
     private var selectedFilter: DateRangeFilter {
         DateRangeFilter(rawValue: filterTypeRaw) ?? .defaultFilter
+    }
+    
+    private var customStartDate: Date? {
+        get {
+            customStartDateTimestamp == 0 ? nil : Date(timeIntervalSince1970: customStartDateTimestamp)
+        }
+        set {
+            customStartDateTimestamp = newValue?.timeIntervalSince1970 ?? 0
+        }
+    }
+    
+    private var customEndDate: Date? {
+        get {
+            customEndDateTimestamp == 0 ? nil : Date(timeIntervalSince1970: customEndDateTimestamp)
+        }
+        set {
+            customEndDateTimestamp = newValue?.timeIntervalSince1970 ?? 0
+        }
     }
     
     private var selectedCategory: Category? {

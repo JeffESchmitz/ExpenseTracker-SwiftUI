@@ -24,8 +24,8 @@ struct ExpenseListView: View {
     
     // Filter persistence with AppStorage
     @AppStorage("filterType") private var filterTypeRaw = DateRangeFilter.defaultFilter.rawValue
-    @AppStorage("customStartDate") private var customStartDate: Date?
-    @AppStorage("customEndDate") private var customEndDate: Date?
+    @AppStorage("customStartDateTimestamp") private var customStartDateTimestamp: Double = 0
+    @AppStorage("customEndDateTimestamp") private var customEndDateTimestamp: Double = 0
     @AppStorage("selectedCategoryName") private var selectedCategoryName: String?
     
     private var selectedFilter: DateRangeFilter {
@@ -35,6 +35,24 @@ struct ExpenseListView: View {
     private var selectedCategory: Category? {
         guard let categoryName = selectedCategoryName else { return nil }
         return categories.first { $0.name == categoryName }
+    }
+    
+    private var customStartDate: Date? {
+        get {
+            customStartDateTimestamp == 0 ? nil : Date(timeIntervalSince1970: customStartDateTimestamp)
+        }
+        set {
+            customStartDateTimestamp = newValue?.timeIntervalSince1970 ?? 0
+        }
+    }
+    
+    private var customEndDate: Date? {
+        get {
+            customEndDateTimestamp == 0 ? nil : Date(timeIntervalSince1970: customEndDateTimestamp)
+        }
+        set {
+            customEndDateTimestamp = newValue?.timeIntervalSince1970 ?? 0
+        }
     }
     
     private var hasActiveFilters: Bool {
@@ -272,8 +290,8 @@ struct ExpenseListView: View {
                     initialStart: customStartDate,
                     initialEnd: customEndDate
                 ) { start, end in
-                    customStartDate = start
-                    customEndDate = end
+                    customStartDateTimestamp = start.timeIntervalSince1970
+                    customEndDateTimestamp = end.timeIntervalSince1970
                     filterTypeRaw = DateRangeFilter.custom.rawValue
                 }
             }
@@ -316,16 +334,16 @@ struct ExpenseListView: View {
         filterTypeRaw = filter.rawValue
         // Clear custom dates when switching to preset filters
         if filter != .custom {
-            customStartDate = nil
-            customEndDate = nil
+            customStartDateTimestamp = 0
+            customEndDateTimestamp = 0
         }
     }
     
     private func clearAllFilters() {
         filterTypeRaw = DateRangeFilter.defaultFilter.rawValue
         selectedCategoryName = nil
-        customStartDate = nil
-        customEndDate = nil
+        customStartDateTimestamp = 0
+        customEndDateTimestamp = 0
     }
     
     private func exportCSV() {

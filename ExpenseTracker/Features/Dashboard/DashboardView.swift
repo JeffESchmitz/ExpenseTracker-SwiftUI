@@ -42,8 +42,8 @@ struct DashboardView: View {
     
     // Filter persistence - read from same AppStorage as ExpenseListView
     @AppStorage("filterType") private var filterTypeRaw = DateRangeFilter.defaultFilter.rawValue
-    @AppStorage("customStartDate") private var customStartDate: Date?
-    @AppStorage("customEndDate") private var customEndDate: Date?
+    @AppStorage("customStartDateTimestamp") private var customStartDateTimestamp: Double = 0
+    @AppStorage("customEndDateTimestamp") private var customEndDateTimestamp: Double = 0
     @AppStorage("selectedCategoryName") private var selectedCategoryName: String?
     @AppStorage("dashboardTimeRange") private var timeRangeRaw = DashboardTimeRange.twelveMonths.rawValue
     
@@ -60,6 +60,24 @@ struct DashboardView: View {
     
     private var dashboardTimeRange: DashboardTimeRange {
         DashboardTimeRange(rawValue: timeRangeRaw) ?? .twelveMonths
+    }
+    
+    private var customStartDate: Date? {
+        get {
+            customStartDateTimestamp == 0 ? nil : Date(timeIntervalSince1970: customStartDateTimestamp)
+        }
+        set {
+            customStartDateTimestamp = newValue?.timeIntervalSince1970 ?? 0
+        }
+    }
+    
+    private var customEndDate: Date? {
+        get {
+            customEndDateTimestamp == 0 ? nil : Date(timeIntervalSince1970: customEndDateTimestamp)
+        }
+        set {
+            customEndDateTimestamp = newValue?.timeIntervalSince1970 ?? 0
+        }
     }
     
     // Filter expenses based on current filters from ExpenseListView
@@ -304,8 +322,8 @@ struct DashboardView: View {
                 initialStart: customStartDate,
                 initialEnd: customEndDate
             ) { start, end in
-                customStartDate = start
-                customEndDate = end
+                customStartDateTimestamp = start.timeIntervalSince1970
+                customEndDateTimestamp = end.timeIntervalSince1970
                 filterTypeRaw = DateRangeFilter.custom.rawValue
             }
         }

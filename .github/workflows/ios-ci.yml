@@ -1,27 +1,8 @@
-name: iOS CI
-
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-
-jobs:
-  build-and-test:
-    runs-on: macos-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Show Xcode version
-      run: xcodebuild -version
-      
-    - name: Build project
-      timeout-minutes: 10
-      run: |
-        xcodebuild -project ExpenseTracker.xcodeproj \
-                   -scheme ExpenseTracker \
-                   -destination 'platform=iOS Simulator,name=iPhone SE (3rd generation),OS=18.6' \
-                   build \
-                   CODE_SIGNING_ALLOWED=NO
+- name: Build for testing (no sim boot)
+  run: |
+    set -o pipefail
+    xcodebuild build-for-testing \
+      -project ExpenseTracker.xcodeproj \
+      -scheme ExpenseTracker \
+      -destination 'generic/platform=iOS Simulator' \
+      -configuration Debug
