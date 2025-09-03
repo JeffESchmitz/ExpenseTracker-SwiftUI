@@ -17,11 +17,16 @@ jobs:
     - name: Show Xcode version
       run: xcodebuild -version
       
-    - name: Build project
-      timeout-minutes: 10
+    - name: List available simulators
+      run: xcrun simctl list devices available
+      
+    - name: Build and test
+      timeout-minutes: 15
       run: |
         xcodebuild -project ExpenseTracker.xcodeproj \
                    -scheme ExpenseTracker \
-                   -destination 'platform=iOS Simulator,name=iPhone SE (3rd generation),OS=18.6' \
-                   build \
+                   -destination 'platform=iOS Simulator,name=iPhone SE (3rd generation)' \
+                   -derivedDataPath DerivedData \
+                   -only-testing:ExpenseTrackerTests \
+                   test \
                    CODE_SIGNING_ALLOWED=NO
