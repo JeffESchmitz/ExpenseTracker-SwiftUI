@@ -37,22 +37,47 @@ jobs:
           echo "Available destinations:"
           xcodebuild -showdestinations -project ExpenseTracker.xcodeproj -scheme ExpenseTracker
 
-      - name: Build & Test (with correct simulator)
-        timeout-minutes: 15
+      - name: Build for Testing (incremental approach)
+        timeout-minutes: 20
         shell: bash
         run: |
           set -o pipefail
           mkdir -p build
-          xcodebuild \
+          
+          echo "Starting build at $(date)"
+          timeout 900 xcodebuild \
             -project ExpenseTracker.xcodeproj \
             -scheme ExpenseTracker \
             -sdk iphonesimulator \
             -destination 'platform=iOS Simulator,name=iPhone SE (3rd generation),OS=18.4' \
             -configuration Debug \
             -xcconfig .ci/ci.xcconfig \
-            -enableCodeCoverage YES \
+            -verbose \
+            build-for-testing \
             -resultBundlePath build/ExpenseTracker.xcresult \
-            test | tee build/xcodebuild.log
+            | while read line; do
+              echo "$(date '+%H:%M:%S'): $line"
+            done | tee build/xcodebuild.log
+          echo "Build completed at $(date)"
+
+      - name: Run Tests (if build succeeded)
+        if: success()
+        timeout-minutes: 10
+        shell: bash  
+        run: |
+          set -o pipefail
+          echo "Starting tests at $(date)"
+          timeout 600 xcodebuild \
+            -project ExpenseTracker.xcodeproj \
+            -scheme ExpenseTracker \
+            -sdk iphonesimulator \
+            -destination 'platform=iOS Simulator,name=iPhone SE (3rd generation),OS=18.4' \
+            -configuration Debug \
+            -xcconfig .ci/ci.xcconfig \
+            test-without-building \
+            -resultBundlePath build/ExpenseTracker.xcresult \
+            | tee -a build/xcodebuild.log
+          echo "Tests completed at $(date)"
 
       - name: Upload result bundle & logs (on failure)
         if: failure()
