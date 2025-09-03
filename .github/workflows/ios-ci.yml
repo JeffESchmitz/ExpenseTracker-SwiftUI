@@ -37,33 +37,43 @@ jobs:
           echo "Available destinations:"
           xcodebuild -showdestinations -project ExpenseTracker.xcodeproj -scheme ExpenseTracker
 
-      - name: Compile Main App
-        timeout-minutes: 10
+      - name: Build for Testing
+        timeout-minutes: 20
         run: |
-          echo "Building main app target..."
-          xcodebuild \
-            -project ExpenseTracker.xcodeproj \
-            -target ExpenseTracker \
-            -sdk iphonesimulator \
-            -configuration Debug \
-            -xcconfig .ci/ci.xcconfig \
-            build
-
-      - name: Run Unit Tests
-        timeout-minutes: 10
-        run: |
-          echo "Running unit tests..."
+          echo "Building for testing..."
           mkdir -p build
+          # Set memory and CPU limits for compilation
+          export NSUnbufferedIO=YES
+          ulimit -n 1024
           set -o pipefail
-          xcodebuild test \
+          xcodebuild build-for-testing \
             -project ExpenseTracker.xcodeproj \
             -scheme ExpenseTracker \
             -sdk iphonesimulator \
             -destination 'platform=iOS Simulator,name=iPhone 15 Pro,OS=17.2' \
             -configuration Debug \
             -xcconfig .ci/ci.xcconfig \
+            -jobs 2 \
+            -quiet \
+            -derivedDataPath build/DerivedData \
+            | tee build/build.log
+
+      - name: Run Tests Without Building
+        timeout-minutes: 10
+        run: |
+          echo "Running tests without building..."
+          # Set memory and CPU limits for testing
+          export NSUnbufferedIO=YES
+          set -o pipefail
+          xcodebuild test-without-building \
+            -project ExpenseTracker.xcodeproj \
+            -scheme ExpenseTracker \
+            -sdk iphonesimulator \
+            -destination 'platform=iOS Simulator,name=iPhone 15 Pro,OS=17.2' \
+            -configuration Debug \
+            -derivedDataPath build/DerivedData \
             -resultBundlePath build/ExpenseTracker.xcresult \
-            | tee build/xcodebuild.log
+            | tee build/test.log
 
       - name: Upload result bundle & logs (on failure)
         if: failure()
@@ -72,7 +82,8 @@ jobs:
           name: xcresult-and-logs
           path: |
             build/ExpenseTracker.xcresult
-            build/xcodebuild.log
+            build/build.log
+            build/test.log
           retention-days: 7
           if-no-files-found: warn
 

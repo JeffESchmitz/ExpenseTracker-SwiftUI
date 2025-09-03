@@ -1,5 +1,17 @@
 IPHONEOS_DEPLOYMENT_TARGET = 17.2
-SWIFT_COMPILATION_MODE = singlefile
-SWIFT_OPTIMIZE_FOR_SIZE = YES
+
+// Compilation optimizations for CI
+SWIFT_COMPILATION_MODE = wholemodule
+SWIFT_OPTIMIZE_FOR_SIZE = NO
+SWIFT_OPTIMIZATION_LEVEL = -O
 DEBUG_INFORMATION_FORMAT = dwarf
-GCC_OPTIMIZATION_LEVEL = 0
+GCC_OPTIMIZATION_LEVEL = s
+
+// Memory and performance settings
+ENABLE_BITCODE = NO
+ENABLE_TESTABILITY = YES
+ONLY_ACTIVE_ARCH = YES
+VALID_ARCHS = arm64
+
+// Reduce compilation parallelism to avoid memory issues
+SWIFT_EXEC = /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc
