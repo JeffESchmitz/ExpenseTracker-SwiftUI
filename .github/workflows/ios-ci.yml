@@ -47,7 +47,7 @@ jobs:
             -project ExpenseTracker.xcodeproj \
             -scheme ExpenseTracker \
             -sdk iphonesimulator \
-            -destination 'platform=iOS Simulator,name=iPhone 14' \
+            -destination 'platform=iOS Simulator' \
             -configuration Debug \
             -xcconfig .ci/ci.xcconfig \
             -enableCodeCoverage YES \
