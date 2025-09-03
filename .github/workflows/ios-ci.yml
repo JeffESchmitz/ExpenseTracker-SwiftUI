@@ -30,42 +30,15 @@ jobs:
           xcodebuild -version
           xcodebuild -showsdks
 
-      - name: Resolve simulator destination (auto-pick)
-        id: dest
-        shell: bash
+      - name: Show available destinations
         run: |
-          python3 - <<'PY' >> $GITHUB_ENV
-          import json, subprocess, re
-          data=json.loads(subprocess.check_output(
-              ["xcrun","simctl","list","devices","--json"]
-          ))
-          candidates=[]
-          for runtime, devices in data.get("devices", {}).items():
-              if "iOS" not in runtime:
-                  continue
-              m=re.search(r'iOS-(\d+)-(\d+)', runtime)  # e.g. "com.apple.CoreSimulator.SimRuntime.iOS-17-5"
-              if not m: 
-                  continue
-              major, minor = int(m.group(1)), int(m.group(2))
-              for d in devices:
-                  if not d.get("isAvailable"):
-                      continue
-                  if d["name"].startswith("iPhone"):
-                      candidates.append((major, minor, d["name"]))
-          if not candidates:
-              print("DEST=")  # fallback; xcodebuild will error with showdestinations info
-              raise SystemExit(1)
-          # Prefer highest OS, then 15 Pro, then 15, then any iPhone
-          def priority(name):
-              if "15 Pro" in name: return 3
-              elif "15" in name: return 2
-              elif "iPhone" in name: return 1
-              else: return 0
-          candidates.sort(reverse=True, key=lambda t: (t[0], t[1], priority(t[2])))
-          major, minor, name = candidates[0]
-          print(f"DEST=platform=iOS Simulator,name={name},OS={major}.{minor}")
-          PY
-          echo "Selected destination: $DEST"
+          echo "Available destinations:"
+          xcodebuild -showdestinations -project ExpenseTracker.xcodeproj -scheme ExpenseTracker
+          
+      - name: Set simulator destination
+        run: |
+          echo "DEST=generic/platform=iOS Simulator" >> $GITHUB_ENV
+          echo "Using generic iOS Simulator destination"
 
       - name: Build & Test (with result bundle)
         if: ${{ env.DEST != '' }}
@@ -76,12 +49,7 @@ jobs:
           set -o pipefail
           mkdir -p build
           
-          # Validate destination first
-          echo "Testing destination: $DEST"
-          if ! xcodebuild -showdestinations -project ExpenseTracker.xcodeproj -scheme ExpenseTracker | grep -q "iPhone.*iOS"; then
-            echo "No valid destinations found, using generic iOS Simulator"
-            DEST="generic/platform=iOS Simulator"
-          fi
+          echo "Using destination: $DEST"
           
           xcodebuild \
             -project ExpenseTracker.xcodeproj \
