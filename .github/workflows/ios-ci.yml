@@ -49,17 +49,21 @@ jobs:
             -xcconfig .ci/ci.xcconfig \
             build
 
-      - name: Compile Unit Tests
-        timeout-minutes: 5
+      - name: Run Unit Tests
+        timeout-minutes: 10
         run: |
-          echo "Building unit tests target..."
-          xcodebuild \
+          echo "Running unit tests..."
+          mkdir -p build
+          set -o pipefail
+          xcodebuild test \
             -project ExpenseTracker.xcodeproj \
-            -target ExpenseTrackerTests \
+            -scheme ExpenseTracker \
             -sdk iphonesimulator \
+            -destination 'platform=iOS Simulator,name=iPhone 15 Pro,OS=17.2' \
             -configuration Debug \
             -xcconfig .ci/ci.xcconfig \
-            build
+            -resultBundlePath build/ExpenseTracker.xcresult \
+            | tee build/xcodebuild.log
 
       - name: Upload result bundle & logs (on failure)
         if: failure()
