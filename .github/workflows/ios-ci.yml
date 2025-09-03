@@ -37,16 +37,22 @@ jobs:
           echo "Available destinations:"
           xcodebuild -showdestinations -project ExpenseTracker.xcodeproj -scheme ExpenseTracker
 
-      - name: Build Only (no simulators available)
-        timeout-minutes: 10
+      - name: Build & Test (with correct simulator)
+        timeout-minutes: 15
+        shell: bash
         run: |
+          set -o pipefail
+          mkdir -p build
           xcodebuild \
             -project ExpenseTracker.xcodeproj \
             -scheme ExpenseTracker \
             -sdk iphonesimulator \
+            -destination 'platform=iOS Simulator,name=iPhone SE (3rd generation),OS=18.4' \
             -configuration Debug \
             -xcconfig .ci/ci.xcconfig \
-            build
+            -enableCodeCoverage YES \
+            -resultBundlePath build/ExpenseTracker.xcresult \
+            test | tee build/xcodebuild.log
 
       - name: Upload result bundle & logs (on failure)
         if: failure()
