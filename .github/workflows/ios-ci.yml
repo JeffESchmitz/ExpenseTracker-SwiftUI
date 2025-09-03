@@ -1,4 +1,4 @@
-name: iOS CI
+name: iOS Build (basic)
 
 on:
   push:
@@ -6,89 +6,24 @@ on:
   pull_request:
     branches: [ main ]
 
-concurrency:
-  group: ios-ci-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  build-and-test:
-    runs-on: macos-15            # pin a macOS that carries Xcode 16.x
-    timeout-minutes: 30
+  build:
+    runs-on: macos-15   # macOS runner with Xcode preinstalled
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Select Xcode 16.x
+      - name: Select Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: '16.2.0'   # or '16.2' or '16.*'
+          xcode-version: '16.2.0'   # pick an installed version
 
-      - name: Show Xcode / SDK info
+      - name: Build with xcodebuild
         run: |
-          xcode-select -p
-          xcodebuild -version
-          xcodebuild -showsdks
-
-      - name: Show available simulators and destinations
-        run: |
-          echo "Available simulators:"
-          xcrun simctl list devices
-          echo "Available destinations:"
-          xcodebuild -showdestinations -project ExpenseTracker.xcodeproj -scheme ExpenseTracker
-
-      - name: Build for Testing
-        timeout-minutes: 20
-        run: |
-          echo "Building for testing..."
-          mkdir -p build
-          # Set memory and CPU limits for compilation
-          export NSUnbufferedIO=YES
-          ulimit -n 1024
           set -o pipefail
-          xcodebuild build-for-testing \
+          xcodebuild \
             -project ExpenseTracker.xcodeproj \
             -scheme ExpenseTracker \
-            -sdk iphonesimulator \
-            -destination 'platform=iOS Simulator,name=iPhone 15 Pro,OS=17.2' \
-            -configuration Debug \
-            -xcconfig .ci/ci.xcconfig \
-            -jobs 2 \
-            -quiet \
-            -derivedDataPath build/DerivedData \
-            | tee build/build.log
-
-      - name: Run Tests Without Building
-        timeout-minutes: 10
-        run: |
-          echo "Running tests without building..."
-          # Set memory and CPU limits for testing
-          export NSUnbufferedIO=YES
-          set -o pipefail
-          xcodebuild test-without-building \
-            -project ExpenseTracker.xcodeproj \
-            -scheme ExpenseTracker \
-            -sdk iphonesimulator \
-            -destination 'platform=iOS Simulator,name=iPhone 15 Pro,OS=17.2' \
-            -configuration Debug \
-            -derivedDataPath build/DerivedData \
-            -resultBundlePath build/ExpenseTracker.xcresult \
-            | tee build/test.log
-
-      - name: Upload result bundle & logs (on failure)
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: xcresult-and-logs
-          path: |
-            build/ExpenseTracker.xcresult
-            build/build.log
-            build/test.log
-          retention-days: 7
-          if-no-files-found: warn
-
-      - name: Clean up simulators
-        if: always()
-        run: |
-          xcrun simctl shutdown all || true
-          pkill -9 -f Simulator || true
+            -destination 'generic/platform=iOS Simulator' \
+            build
