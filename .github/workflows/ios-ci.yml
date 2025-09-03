@@ -30,25 +30,29 @@ jobs:
           xcodebuild -version
           xcodebuild -showsdks
 
-      - name: Show available destinations
+      - name: Show available simulators and destinations
         run: |
+          echo "Available simulators:"
+          xcrun simctl list devices
           echo "Available destinations:"
           xcodebuild -showdestinations -project ExpenseTracker.xcodeproj -scheme ExpenseTracker
-          
-      - name: Set simulator destination
-        run: |
-          echo "DEST=platform=iOS Simulator,name=iPhone SE (3rd generation)" >> $GITHUB_ENV
-          echo "Using iPhone SE (3rd generation) simulator"
 
-      - name: Build Only (reliable)
-        timeout-minutes: 10
+      - name: Build & Test (with CI deployment target override)
+        timeout-minutes: 15
+        shell: bash
         run: |
+          set -o pipefail
+          mkdir -p build
           xcodebuild \
             -project ExpenseTracker.xcodeproj \
             -scheme ExpenseTracker \
             -sdk iphonesimulator \
+            -destination 'platform=iOS Simulator,name=iPhone 15 Pro,OS=17.5' \
             -configuration Debug \
-            build
+            -xcconfig .ci/ci.xcconfig \
+            -enableCodeCoverage YES \
+            -resultBundlePath build/ExpenseTracker.xcresult \
+            test | tee build/xcodebuild.log
 
       - name: Upload result bundle & logs (on failure)
         if: failure()
