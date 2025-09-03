@@ -1,141 +1,31 @@
-name: iOS starter workflow
+# .github/workflows/ios-2.yml
+name: iOS Build (build-for-testing)
 
 on:
-  push:    { branches: [ "main" ] }
-  pull_request: { branches: [ "main" ] }
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   build:
-    name: Build & (optionally) run tests on an available iPhone simulator
-    runs-on: macos-15            # pin macOS image
-    timeout-minutes: 30
+    runs-on: macos-15
+    timeout-minutes: 20
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Pin Xcode on the runner so toolchains don't drift
       - name: Select Xcode 16.2
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: '16.2.0'
 
-      - name: Show environment
-        run: |
-          xcodebuild -version
-          xcodebuild -showsdks
-          if ls -1 *.xcworkspace >/dev/null 2>&1; then \
-            xcodebuild -list -json -workspace *.xcworkspace | sed 's/,$//' || true; \
-          else \
-            xcodebuild -list -json -project *.xcodeproj | sed 's/,$//' || true; \
-          fi
-
-      # Pick a shared scheme:
-      # 1) Prefer "ExpenseTracker" if found
-      # 2) Otherwise first shared scheme
-      - name: Resolve scheme / project kind
-        id: resolve
-        shell: bash
-        run: |
-          set -euo pipefail
-          if ls -1 *.xcworkspace >/dev/null 2>&1; then
-            FILE_KIND="workspace"; FILE_PATH="$(ls -1 *.xcworkspace | head -1)"
-            JSON="$(xcodebuild -list -json -workspace "$FILE_PATH")"
-          else
-            FILE_KIND="project"; FILE_PATH="$(ls -1 *.xcodeproj | head -1)"
-            JSON="$(xcodebuild -list -json -project "$FILE_PATH")"
-          fi
-          # Pull schemes from JSON
-          SCHEMES=$(python3 - <<'PY' "$JSON"
-import json, sys
-j=json.loads(sys.argv[1])
-proj=j.get('project') or {}
-schemes=proj.get('schemes') or []
-print("\n".join(schemes))
-PY
-)
-          if echo "$SCHEMES" | grep -Fxq "ExpenseTracker"; then
-            SCHEME="ExpenseTracker"
-          else
-            SCHEME="$(echo "$SCHEMES" | head -1)"
-          fi
-          if [ -z "$SCHEME" ]; then
-            echo "No shared schemes found. In Xcode: Product → Scheme → Manage Schemes… → check 'Shared'." >&2
-            exit 1
-          fi
-          echo "SCHEME=$SCHEME" >> "$GITHUB_ENV"
-          echo "FILE_KIND=$FILE_KIND" >> "$GITHUB_ENV"
-          echo "FILE_PATH=$FILE_PATH" >> "$GITHUB_ENV"
-          echo "Using $FILE_KIND: $FILE_PATH, scheme: $SCHEME"
-
-      # Build app + test bundles WITHOUT booting a sim (fast & reliable)
       - name: Build for testing (no sim boot)
         run: |
           set -o pipefail
           xcodebuild build-for-testing \
-            -$FILE_KIND "$FILE_PATH" \
-            -scheme "$SCHEME" \
+            -project ExpenseTracker.xcodeproj \
+            -scheme ExpenseTracker \
             -destination 'generic/platform=iOS Simulator' \
             -configuration Debug
-
-      # OPTIONAL: actually run tests (comment out if you want compile-only CI)
-      - name: Pre-clean simulators
-        if: always()
-        run: |
-          xcrun simctl shutdown all || true
-          pkill -9 -f Simulator || true
-          pkill -9 -f CoreSimulator || true
-          launchctl remove com.apple.CoreSimulator.CoreSimulatorService || true
-          sleep 2
-
-      - name: Resolve a real iPhone simulator name (OS auto)
-        id: device
-        shell: bash
-        run: |
-          set -euo pipefail
-          # Prefer iPhone 15 Pro, then iPhone 15, else any iPhone
-          CANDIDATE="$(xcrun simctl list devices available | awk -F '[()]' '/iPhone 15 Pro/{print $1}' | sed 's/ *$//' | head -1)"
-          if [ -z "$CANDIDATE" ]; then
-            CANDIDATE="$(xcrun simctl list devices available | awk -F '[()]' '/iPhone 15/{print $1}' | sed 's/ *$//' | head -1)"
-          fi
-          if [ -z "$CANDIDATE" ]; then
-            CANDIDATE="$(xcrun simctl list devices available | awk -F '[()]' '/iPhone/ {print $1}' | sed 's/ *$//' | head -1)"
-          fi
-          if [ -z "$CANDIDATE" ]; then
-            echo "No available iPhone simulators found." >&2
-            exit 1
-          fi
-          # Make a clean "name=…" value (strip trailing ' (…)' if any)
-          NAME="$(echo "$CANDIDATE" | sed -E 's/ *$//')"
-          echo "DEST=platform=iOS Simulator,name=${NAME}" >> "$GITHUB_ENV"
-          echo "Using simulator: ${NAME}"
-
-      - name: Test without building (single worker, timeout)
-        run: |
-          set -o pipefail
-          xcodebuild test-without-building \
-            -$FILE_KIND "$FILE_PATH" \
-            -scheme "$SCHEME" \
-            -sdk iphonesimulator \
-            -destination "$DEST" \
-            -destination-timeout 120 \
-            -parallel-testing-enabled NO \
-            -maximum-parallel-testing-workers 1 \
-            -only-testing:ExpenseTrackerTests \
-            -configuration Debug \
-            -resultBundlePath build/ExpenseTracker.xcresult
-
-      - name: Upload xcresult on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: xcresult
-          path: build/ExpenseTracker.xcresult
-          retention-days: 7
-          if-no-files-found: warn
-
-      - name: Post-clean simulators
-        if: always()
-        run: |
-          xcrun simctl shutdown all || true
-          pkill -9 -f Simulator || true
