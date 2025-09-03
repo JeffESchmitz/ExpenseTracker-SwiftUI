@@ -74,7 +74,15 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          rm -rf build || true
+          mkdir -p build
+          
+          # Validate destination first
+          echo "Testing destination: $DEST"
+          if ! xcodebuild -showdestinations -project ExpenseTracker.xcodeproj -scheme ExpenseTracker | grep -q "iPhone.*iOS"; then
+            echo "No valid destinations found, using generic iOS Simulator"
+            DEST="generic/platform=iOS Simulator"
+          fi
+          
           xcodebuild \
             -project ExpenseTracker.xcodeproj \
             -scheme ExpenseTracker \
