@@ -1,29 +1,22 @@
-name: iOS Build (basic)
+name: iOS Build (build-for-testing only)
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  pull_request: { branches: [ main ] }
+  push: { branches: [ main ] }
 
 jobs:
   build:
-    runs-on: macos-15   # macOS runner with Xcode preinstalled
-
+    runs-on: macos-15
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
+      - uses: actions/checkout@v4
       - name: Select Xcode
         uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: '16.2.0'   # pick an installed version
-
-      - name: Build with xcodebuild
+        with: { xcode-version: '16.2.0' }
+      - name: Build for testing (no sim boot)
         run: |
           set -o pipefail
-          xcodebuild \
+          xcodebuild build-for-testing \
             -project ExpenseTracker.xcodeproj \
             -scheme ExpenseTracker \
             -destination 'generic/platform=iOS Simulator' \
-            build
+            -configuration Debug
