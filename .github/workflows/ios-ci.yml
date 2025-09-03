@@ -30,14 +30,42 @@ jobs:
           xcodebuild -version
           xcodebuild -showsdks
 
-      - name: Show available simulators
+      - name: Resolve simulator destination (auto-pick)
+        id: dest
+        shell: bash
         run: |
-          xcrun simctl list devices
-          xcodebuild -showdestinations -project ExpenseTracker.xcodeproj -scheme ExpenseTracker
+          python3 - <<'PY' >> $GITHUB_ENV
+          import json, subprocess, re
+          data=json.loads(subprocess.check_output(
+              ["xcrun","simctl","list","devices","--json"]
+          ))
+          candidates=[]
+          for runtime, devices in data.get("devices", {}).items():
+              if "iOS" not in runtime:
+                  continue
+              m=re.search(r'iOS-(\d+)-(\d+)', runtime)  # e.g. "com.apple.CoreSimulator.SimRuntime.iOS-17-5"
+              if not m: 
+                  continue
+              major, minor = int(m.group(1)), int(m.group(2))
+              for d in devices:
+                  if not d.get("isAvailable"):
+                      continue
+                  if d["name"] in ("iPhone 15 Pro", "iPhone 15"):
+                      candidates.append((major, minor, d["name"]))
+          if not candidates:
+              print("DEST=")  # fallback; xcodebuild will error with showdestinations info
+              raise SystemExit(1)
+          # Prefer highest OS, then 15 Pro
+          candidates.sort(reverse=True, key=lambda t: (t[0], t[1], 1 if t[2]=="iPhone 15 Pro" else 0))
+          major, minor, name = candidates[0]
+          print(f"DEST=platform=iOS Simulator,name={name},OS={major}.{minor}")
+          PY
+          echo "Selected destination: $DEST"
 
-      - name: Build & Test
+      - name: Build & Test (with result bundle)
+        if: ${{ env.DEST != '' }}
         id: test
-        timeout-minutes: 15
+        timeout-minutes: 20
         shell: bash
         run: |
           set -o pipefail
@@ -46,7 +74,7 @@ jobs:
             -project ExpenseTracker.xcodeproj \
             -scheme ExpenseTracker \
             -sdk iphonesimulator \
-            -destination 'platform=iOS Simulator,name=iPhone 15 Pro,OS=17.5' \
+            -destination "$DEST" \
             -configuration Debug \
             -enableCodeCoverage YES \
             -resultBundlePath build/ExpenseTracker.xcresult \
