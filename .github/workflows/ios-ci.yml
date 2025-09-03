@@ -6,27 +6,68 @@ on:
   pull_request:
     branches: [ main ]
 
+concurrency:
+  group: ios-ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-test:
-    runs-on: macos-latest
-    
+    runs-on: macos-14        # or macos-15 if you prefer
+    timeout-minutes: 30
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Show Xcode version
-      run: xcodebuild -version
-      
-    - name: List available simulators
-      run: xcrun simctl list devices available
-      
-    - name: Build and test
-      timeout-minutes: 15
-      run: |
-        xcodebuild -project ExpenseTracker.xcodeproj \
-                   -scheme ExpenseTracker \
-                   -destination 'platform=iOS Simulator,name=iPhone SE (3rd generation)' \
-                   -derivedDataPath DerivedData \
-                   -only-testing:ExpenseTrackerTests \
-                   test \
-                   CODE_SIGNING_ALLOWED=NO
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Pin Xcode so runner updates don't break your build
+      - name: Select Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '16.0'   # set to the version you want
+
+      - name: Show Xcode / SDK info
+        run: |
+          xcodebuild -version
+          xcodebuild -showsdks
+
+      # Diagnostics: see what destinations the runner actually supports
+      - name: Show available simulators
+        run: |
+          xcrun simctl list devices
+          xcodebuild -showdestinations -project ExpenseTracker.xcodeproj -scheme ExpenseTracker
+
+      - name: Build & Test (with result bundle)
+        id: test
+        timeout-minutes: 15
+        shell: bash
+        run: |
+          set -o pipefail
+          rm -rf build || true
+          xcodebuild \
+            -project ExpenseTracker.xcodeproj \
+            -scheme ExpenseTracker \
+            -sdk iphonesimulator \
+            -destination 'platform=iOS Simulator,name=iPhone 15 Pro,OS=latest' \
+            -configuration Debug \
+            -enableCodeCoverage YES \
+            -resultBundlePath build/ExpenseTracker.xcresult \
+            test | tee build/xcodebuild.log
+          echo "result_bundle=build/ExpenseTracker.xcresult" >> $GITHUB_OUTPUT
+
+      - name: Upload result bundle & logs (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcresult-and-logs
+          path: |
+            build/ExpenseTracker.xcresult
+            build/xcodebuild.log
+          if-no-files-found: warn
+          retention-days: 7
+
+      # Ensure simulator processes don't keep the job hanging
+      - name: Clean up simulators
+        if: always()
+        run: |
+          xcrun simctl shutdown all || true
+          pkill -9 -f Simulator || true
