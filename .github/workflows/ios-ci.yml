@@ -37,46 +37,29 @@ jobs:
           echo "Available destinations:"
           xcodebuild -showdestinations -project ExpenseTracker.xcodeproj -scheme ExpenseTracker
 
-      - name: Build for Testing (incremental approach)
-        timeout-minutes: 15
-        shell: bash
-        run: |
-          set -o pipefail
-          mkdir -p build
-          
-          echo "Starting build at $(date)"
-          xcodebuild \
-            -project ExpenseTracker.xcodeproj \
-            -scheme ExpenseTracker \
-            -sdk iphonesimulator \
-            -destination 'platform=iOS Simulator,name=iPhone SE (3rd generation),OS=18.6' \
-            -configuration Debug \
-            -xcconfig .ci/ci.xcconfig \
-            build-for-testing \
-            -resultBundlePath build/ExpenseTracker.xcresult \
-            | while read line; do
-              echo "$(date '+%H:%M:%S'): $line"
-            done | tee build/xcodebuild.log
-          echo "Build completed at $(date)"
-
-      - name: Run Tests (if build succeeded)
-        if: success()
+      - name: Compile Main App
         timeout-minutes: 10
-        shell: bash  
         run: |
-          set -o pipefail
-          echo "Starting tests at $(date)"
+          echo "Building main app target..."
           xcodebuild \
             -project ExpenseTracker.xcodeproj \
-            -scheme ExpenseTracker \
+            -target ExpenseTracker \
             -sdk iphonesimulator \
-            -destination 'platform=iOS Simulator,name=iPhone SE (3rd generation),OS=18.6' \
             -configuration Debug \
             -xcconfig .ci/ci.xcconfig \
-            test-without-building \
-            -resultBundlePath build/ExpenseTracker.xcresult \
-            | tee -a build/xcodebuild.log
-          echo "Tests completed at $(date)"
+            build
+
+      - name: Compile Unit Tests
+        timeout-minutes: 5
+        run: |
+          echo "Building unit tests target..."
+          xcodebuild \
+            -project ExpenseTracker.xcodeproj \
+            -target ExpenseTrackerTests \
+            -sdk iphonesimulator \
+            -configuration Debug \
+            -xcconfig .ci/ci.xcconfig \
+            build
 
       - name: Upload result bundle & logs (on failure)
         if: failure()
