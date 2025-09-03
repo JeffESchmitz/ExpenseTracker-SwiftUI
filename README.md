@@ -13,6 +13,7 @@ Track your spending with beautiful visualizations, smart filtering, and comprehe
 ![SwiftUI](https://img.shields.io/badge/SwiftUI-5.0-orange.svg)
 ![SwiftData](https://img.shields.io/badge/SwiftData-iOS18-green.svg)
 ![Swift Charts](https://img.shields.io/badge/Swift_Charts-5.0-red.svg)
+![CI Status](https://img.shields.io/badge/CI-Active-brightgreen.svg)
 
 </div>
 
