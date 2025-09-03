@@ -38,21 +38,20 @@ jobs:
           xcodebuild -showdestinations -project ExpenseTracker.xcodeproj -scheme ExpenseTracker
 
       - name: Build for Testing (incremental approach)
-        timeout-minutes: 20
+        timeout-minutes: 15
         shell: bash
         run: |
           set -o pipefail
           mkdir -p build
           
           echo "Starting build at $(date)"
-          timeout 900 xcodebuild \
+          xcodebuild \
             -project ExpenseTracker.xcodeproj \
             -scheme ExpenseTracker \
             -sdk iphonesimulator \
             -destination 'platform=iOS Simulator,name=iPhone SE (3rd generation),OS=18.4' \
             -configuration Debug \
             -xcconfig .ci/ci.xcconfig \
-            -verbose \
             build-for-testing \
             -resultBundlePath build/ExpenseTracker.xcresult \
             | while read line; do
@@ -67,7 +66,7 @@ jobs:
         run: |
           set -o pipefail
           echo "Starting tests at $(date)"
-          timeout 600 xcodebuild \
+          xcodebuild \
             -project ExpenseTracker.xcodeproj \
             -scheme ExpenseTracker \
             -sdk iphonesimulator \
