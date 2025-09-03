@@ -46,7 +46,7 @@ jobs:
             -project ExpenseTracker.xcodeproj \
             -scheme ExpenseTracker \
             -sdk iphonesimulator \
-            -destination 'platform=iOS Simulator,name=iPhone 15 Pro,OS=latest' \
+            -destination 'platform=iOS Simulator,name=iPhone 15 Pro,OS=17.5' \
             -configuration Debug \
             -enableCodeCoverage YES \
             -resultBundlePath build/ExpenseTracker.xcresult \
