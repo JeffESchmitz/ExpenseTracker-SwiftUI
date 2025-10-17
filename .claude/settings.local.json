@@ -37,7 +37,9 @@
       "Bash(gh pr view:*)",
       "Bash(gh pr status:*)",
       "Bash(git fetch:*)",
-      "Bash(git merge:*)"
+      "Bash(git merge:*)",
+      "Read(//Users/Z004S1K/Desktop/Github/JeffESchmitz/expense-tracker-budget/ExpenseTracker/Models/**)",
+      "Read(//Users/Z004S1K/Desktop/Github/JeffESchmitz/expense-tracker-budget/ExpenseTracker/**)"
     ],
     "deny": [],
     "ask": []

@@ -22,6 +22,12 @@ struct ContentView: View {
                     Text("Dashboard")
                 }
 
+            BudgetsView()
+                .tabItem {
+                    Image(systemName: "dollarsign.circle.fill")
+                    Text("Budgets")
+                }
+
             CategoriesView()
                 .tabItem {
                     Image(systemName: "tag")

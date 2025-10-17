@@ -469,3 +469,442 @@ class CategoryManagementTests: XCTestCase {
         }
     }
 }
+
+// MARK: - Budget Model Tests
+class BudgetModelTests: XCTestCase {
+
+    var modelContainer: ModelContainer!
+    var modelContext: ModelContext!
+    var testCategory: ExpenseTracker.Category!
+    var testBudget: ExpenseTracker.Budget!
+
+    override func setUp() {
+        super.setUp()
+
+        // Create in-memory container for testing
+        let schema = Schema([ExpenseTracker.Expense.self, ExpenseTracker.Category.self, ExpenseTracker.Budget.self])
+        let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
+
+        do {
+            modelContainer = try ModelContainer(for: schema, configurations: [configuration])
+            modelContext = ModelContext(modelContainer)
+
+            // Create test category
+            testCategory = ExpenseTracker.Category(name: "Food", color: "orange", symbolName: "fork.knife")
+            modelContext.insert(testCategory)
+
+            // Create test budget for this month
+            let thisMonthDate = Date().startOfMonth
+            testBudget = try ExpenseTracker.Budget(
+                category: testCategory,
+                monthlyLimit: Decimal(500),
+                currentMonth: thisMonthDate,
+                notes: "Grocery and dining budget"
+            )
+            modelContext.insert(testBudget)
+
+            try modelContext.save()
+
+        } catch {
+            XCTFail("Failed to set up test environment: \(error)")
+        }
+    }
+
+    override func tearDown() {
+        modelContainer = nil
+        modelContext = nil
+        testCategory = nil
+        testBudget = nil
+        super.tearDown()
+    }
+
+    func testBudgetInitialization() {
+        XCTAssertEqual(testBudget.monthlyLimit, 500.00)
+        XCTAssertEqual(testBudget.category.name, "Food")
+        XCTAssertEqual(testBudget.notes, "Grocery and dining budget")
+        XCTAssertFalse(testBudget.isDemo)
+    }
+
+    func testBudgetValidation_PositiveLimit() {
+        // Valid budget with positive limit should work
+        do {
+            let validBudget = try ExpenseTracker.Budget(
+                category: testCategory,
+                monthlyLimit: Decimal(100),
+                currentMonth: Date()
+            )
+            XCTAssertEqual(validBudget.monthlyLimit, Decimal(100))
+        } catch {
+            XCTFail("Failed to create valid budget: \(error)")
+        }
+    }
+
+    func testBudgetValidation_ZeroLimitFails() {
+        // Budget with zero limit should fail
+        XCTAssertThrowsError(
+            try ExpenseTracker.Budget(
+                category: testCategory,
+                monthlyLimit: Decimal(0),
+                currentMonth: Date()
+            ),
+            "Budget should not allow zero limit"
+        )
+    }
+
+    func testBudgetValidation_NegativeLimitFails() {
+        // Budget with negative limit should fail
+        XCTAssertThrowsError(
+            try ExpenseTracker.Budget(
+                category: testCategory,
+                monthlyLimit: Decimal(-50),
+                currentMonth: Date()
+            ),
+            "Budget should not allow negative limit"
+        )
+    }
+
+    func testPercentageUsedCalculation_NoExpenses() {
+        // With no expenses, percentage used should be 0
+        XCTAssertEqual(testBudget.percentageUsed, 0.0)
+    }
+
+    func testPercentageUsedCalculation_PartialSpending() {
+        // Add expense for 250 out of 500 budget = 50%
+        let expense = ExpenseTracker.Expense(
+            amount: Decimal(250),
+            date: Date(),
+            notes: "Groceries",
+            category: testCategory
+        )
+        modelContext.insert(expense)
+
+        do {
+            try modelContext.save()
+        } catch {
+            XCTFail("Failed to save expense: \(error)")
+            return
+        }
+
+        XCTAssertEqual(testBudget.percentageUsed, 50.0, accuracy: 0.01)
+    }
+
+    func testPercentageUsedCalculation_FullSpending() {
+        // Add expense for full 500 budget = 100%
+        let expense = ExpenseTracker.Expense(
+            amount: Decimal(500),
+            date: Date(),
+            notes: "Monthly groceries",
+            category: testCategory
+        )
+        modelContext.insert(expense)
+
+        do {
+            try modelContext.save()
+        } catch {
+            XCTFail("Failed to save expense: \(error)")
+            return
+        }
+
+        XCTAssertEqual(testBudget.percentageUsed, 100.0, accuracy: 0.01)
+    }
+
+    func testPercentageUsedCalculation_OverSpending() {
+        // Add expense for 600 out of 500 budget = 120%
+        let expense = ExpenseTracker.Expense(
+            amount: Decimal(600),
+            date: Date(),
+            notes: "Over-budget spending",
+            category: testCategory
+        )
+        modelContext.insert(expense)
+
+        do {
+            try modelContext.save()
+        } catch {
+            XCTFail("Failed to save expense: \(error)")
+            return
+        }
+
+        XCTAssertEqual(testBudget.percentageUsed, 120.0, accuracy: 0.01)
+    }
+
+    func testAmountRemainingCalculation_NoExpenses() {
+        // With no expenses, full budget remains
+        XCTAssertEqual(testBudget.amountRemaining, Decimal(500))
+    }
+
+    func testAmountRemainingCalculation_PartialSpending() {
+        // Add expense for 300, should have 200 remaining
+        let expense = ExpenseTracker.Expense(
+            amount: Decimal(300),
+            date: Date(),
+            notes: "Partial spending",
+            category: testCategory
+        )
+        modelContext.insert(expense)
+
+        do {
+            try modelContext.save()
+        } catch {
+            XCTFail("Failed to save expense: \(error)")
+            return
+        }
+
+        XCTAssertEqual(testBudget.amountRemaining, Decimal(200))
+    }
+
+    func testAmountRemainingCalculation_OverSpending() {
+        // When over budget, amountRemaining should be 0 (not negative)
+        let expense = ExpenseTracker.Expense(
+            amount: Decimal(600),
+            date: Date(),
+            notes: "Over spending",
+            category: testCategory
+        )
+        modelContext.insert(expense)
+
+        do {
+            try modelContext.save()
+        } catch {
+            XCTFail("Failed to save expense: \(error)")
+            return
+        }
+
+        XCTAssertEqual(testBudget.amountRemaining, Decimal(0))
+    }
+
+    func testAlertThreshold_Below75Percent() {
+        // 25% spending should not trigger alert
+        let expense = ExpenseTracker.Expense(
+            amount: Decimal(125),  // 25% of 500
+            date: Date(),
+            notes: "Low spending",
+            category: testCategory
+        )
+        modelContext.insert(expense)
+
+        do {
+            try modelContext.save()
+        } catch {
+            XCTFail("Failed to save expense: \(error)")
+            return
+        }
+
+        XCTAssertFalse(testBudget.isAlertThreshold)
+    }
+
+    func testAlertThreshold_At75Percent() {
+        // Exactly 75% should trigger alert
+        let expense = ExpenseTracker.Expense(
+            amount: Decimal(375),  // 75% of 500
+            date: Date(),
+            notes: "Alert level spending",
+            category: testCategory
+        )
+        modelContext.insert(expense)
+
+        do {
+            try modelContext.save()
+        } catch {
+            XCTFail("Failed to save expense: \(error)")
+            return
+        }
+
+        XCTAssertTrue(testBudget.isAlertThreshold)
+    }
+
+    func testAlertThreshold_Above75Percent() {
+        // 80% spending should trigger alert
+        let expense = ExpenseTracker.Expense(
+            amount: Decimal(400),  // 80% of 500
+            date: Date(),
+            notes: "High spending",
+            category: testCategory
+        )
+        modelContext.insert(expense)
+
+        do {
+            try modelContext.save()
+        } catch {
+            XCTFail("Failed to save expense: \(error)")
+            return
+        }
+
+        XCTAssertTrue(testBudget.isAlertThreshold)
+    }
+
+    func testWarningThreshold_Below90Percent() {
+        // 80% spending should not trigger warning (only alert)
+        let expense = ExpenseTracker.Expense(
+            amount: Decimal(400),  // 80% of 500
+            date: Date(),
+            notes: "Alert level spending",
+            category: testCategory
+        )
+        modelContext.insert(expense)
+
+        do {
+            try modelContext.save()
+        } catch {
+            XCTFail("Failed to save expense: \(error)")
+            return
+        }
+
+        XCTAssertTrue(testBudget.isAlertThreshold)
+        XCTAssertFalse(testBudget.isWarningThreshold)
+    }
+
+    func testWarningThreshold_At90Percent() {
+        // Exactly 90% should trigger warning
+        let expense = ExpenseTracker.Expense(
+            amount: Decimal(450),  // 90% of 500
+            date: Date(),
+            notes: "Warning level spending",
+            category: testCategory
+        )
+        modelContext.insert(expense)
+
+        do {
+            try modelContext.save()
+        } catch {
+            XCTFail("Failed to save expense: \(error)")
+            return
+        }
+
+        XCTAssertTrue(testBudget.isWarningThreshold)
+    }
+
+    func testWarningThreshold_Above90Percent() {
+        // 95% spending should trigger warning
+        let expense = ExpenseTracker.Expense(
+            amount: Decimal(475),  // 95% of 500
+            date: Date(),
+            notes: "Critical spending",
+            category: testCategory
+        )
+        modelContext.insert(expense)
+
+        do {
+            try modelContext.save()
+        } catch {
+            XCTFail("Failed to save expense: \(error)")
+            return
+        }
+
+        XCTAssertTrue(testBudget.isWarningThreshold)
+    }
+
+    func testCurrentSpendingCalculation_MonthlyScope() {
+        // Create expenses in different months
+        let calendar = Calendar.current
+        let thisMonth = Date().startOfMonth
+        let lastMonth = calendar.date(byAdding: .month, value: -1, to: thisMonth)!
+        let nextMonth = calendar.date(byAdding: .month, value: 1, to: thisMonth)!
+
+        let thisMonthExpense = ExpenseTracker.Expense(
+            amount: Decimal(100),
+            date: thisMonth.addingTimeInterval(86400),  // First day of month
+            notes: "This month",
+            category: testCategory
+        )
+        let lastMonthExpense = ExpenseTracker.Expense(
+            amount: Decimal(200),
+            date: lastMonth.addingTimeInterval(86400),
+            notes: "Last month",
+            category: testCategory
+        )
+        let nextMonthExpense = ExpenseTracker.Expense(
+            amount: Decimal(300),
+            date: nextMonth.addingTimeInterval(86400),
+            notes: "Next month",
+            category: testCategory
+        )
+
+        modelContext.insert(thisMonthExpense)
+        modelContext.insert(lastMonthExpense)
+        modelContext.insert(nextMonthExpense)
+
+        do {
+            try modelContext.save()
+        } catch {
+            XCTFail("Failed to save expenses: \(error)")
+            return
+        }
+
+        // Budget should only count this month's expense
+        XCTAssertEqual(testBudget.calculateCurrentSpending(), Decimal(100))
+    }
+
+    func testCurrentSpendingCalculation_ExcludesDemoExpenses() {
+        // Create regular and demo expenses
+        let regularExpense = ExpenseTracker.Expense(
+            amount: Decimal(100),
+            date: Date(),
+            notes: "Regular",
+            category: testCategory,
+            isDemo: false
+        )
+        let demoExpense = ExpenseTracker.Expense(
+            amount: Decimal(200),
+            date: Date(),
+            notes: "Demo",
+            category: testCategory,
+            isDemo: true
+        )
+
+        modelContext.insert(regularExpense)
+        modelContext.insert(demoExpense)
+
+        do {
+            try modelContext.save()
+        } catch {
+            XCTFail("Failed to save expenses: \(error)")
+            return
+        }
+
+        // Budget should only count regular expense, excluding demo
+        XCTAssertEqual(testBudget.calculateCurrentSpending(), Decimal(100))
+    }
+
+    func testMultipleExpensesCalculation() {
+        // Create multiple expenses that should sum correctly
+        let expenses = [
+            ExpenseTracker.Expense(amount: Decimal(50), date: Date(), notes: "Lunch", category: testCategory),
+            ExpenseTracker.Expense(amount: Decimal(75), date: Date(), notes: "Snacks", category: testCategory),
+            ExpenseTracker.Expense(amount: Decimal(120), date: Date(), notes: "Groceries", category: testCategory)
+        ]
+
+        for expense in expenses {
+            modelContext.insert(expense)
+        }
+
+        do {
+            try modelContext.save()
+        } catch {
+            XCTFail("Failed to save expenses: \(error)")
+            return
+        }
+
+        // Total should be 245
+        XCTAssertEqual(testBudget.calculateCurrentSpending(), Decimal(245))
+        XCTAssertEqual(testBudget.percentageUsed, 49.0, accuracy: 0.01)
+        XCTAssertEqual(testBudget.amountRemaining, Decimal(255))
+    }
+
+    func testBudgetDateNormalizedToMonthStart() {
+        // When creating budget with a date in the middle of month,
+        // it should normalize to start of month
+        let midMonthDate = Date().addingTimeInterval(86400 * 15)  // 15 days from now
+        do {
+            let budget = try ExpenseTracker.Budget(
+                category: testCategory,
+                monthlyLimit: Decimal(500),
+                currentMonth: midMonthDate
+            )
+
+            XCTAssertEqual(budget.currentMonth, midMonthDate.startOfMonth)
+        } catch {
+            XCTFail("Failed to create budget: \(error)")
+        }
+    }
+}
