@@ -495,9 +495,9 @@ class BudgetModelTests: XCTestCase {
 
             // Create test budget for this month
             let thisMonthDate = Date().startOfMonth
-            testBudget = ExpenseTracker.Budget(
+            testBudget = try ExpenseTracker.Budget(
                 category: testCategory,
-                monthlyLimit: 500.00,
+                monthlyLimit: Decimal(500),
                 currentMonth: thisMonthDate,
                 notes: "Grocery and dining budget"
             )
@@ -527,34 +527,40 @@ class BudgetModelTests: XCTestCase {
 
     func testBudgetValidation_PositiveLimit() {
         // Valid budget with positive limit should work
-        let validBudget = ExpenseTracker.Budget(
-            category: testCategory,
-            monthlyLimit: 100.00,
-            currentMonth: Date()
-        )
-        XCTAssertEqual(validBudget.monthlyLimit, 100.00)
+        do {
+            let validBudget = try ExpenseTracker.Budget(
+                category: testCategory,
+                monthlyLimit: Decimal(100),
+                currentMonth: Date()
+            )
+            XCTAssertEqual(validBudget.monthlyLimit, Decimal(100))
+        } catch {
+            XCTFail("Failed to create valid budget: \(error)")
+        }
     }
 
     func testBudgetValidation_ZeroLimitFails() {
         // Budget with zero limit should fail
-        XCTAssertThrowsError({
-            _ = ExpenseTracker.Budget(
+        XCTAssertThrowsError(
+            try ExpenseTracker.Budget(
                 category: testCategory,
-                monthlyLimit: 0,
+                monthlyLimit: Decimal(0),
                 currentMonth: Date()
-            )
-        }(), "Budget should not allow zero limit")
+            ),
+            "Budget should not allow zero limit"
+        )
     }
 
     func testBudgetValidation_NegativeLimitFails() {
         // Budget with negative limit should fail
-        XCTAssertThrowsError({
-            _ = ExpenseTracker.Budget(
+        XCTAssertThrowsError(
+            try ExpenseTracker.Budget(
                 category: testCategory,
-                monthlyLimit: -50.00,
+                monthlyLimit: Decimal(-50),
                 currentMonth: Date()
-            )
-        }(), "Budget should not allow negative limit")
+            ),
+            "Budget should not allow negative limit"
+        )
     }
 
     func testPercentageUsedCalculation_NoExpenses() {
@@ -565,7 +571,7 @@ class BudgetModelTests: XCTestCase {
     func testPercentageUsedCalculation_PartialSpending() {
         // Add expense for 250 out of 500 budget = 50%
         let expense = ExpenseTracker.Expense(
-            amount: 250.00,
+            amount: Decimal(250),
             date: Date(),
             notes: "Groceries",
             category: testCategory
@@ -585,7 +591,7 @@ class BudgetModelTests: XCTestCase {
     func testPercentageUsedCalculation_FullSpending() {
         // Add expense for full 500 budget = 100%
         let expense = ExpenseTracker.Expense(
-            amount: 500.00,
+            amount: Decimal(500),
             date: Date(),
             notes: "Monthly groceries",
             category: testCategory
@@ -605,7 +611,7 @@ class BudgetModelTests: XCTestCase {
     func testPercentageUsedCalculation_OverSpending() {
         // Add expense for 600 out of 500 budget = 120%
         let expense = ExpenseTracker.Expense(
-            amount: 600.00,
+            amount: Decimal(600),
             date: Date(),
             notes: "Over-budget spending",
             category: testCategory
@@ -624,13 +630,13 @@ class BudgetModelTests: XCTestCase {
 
     func testAmountRemainingCalculation_NoExpenses() {
         // With no expenses, full budget remains
-        XCTAssertEqual(testBudget.amountRemaining, 500.00)
+        XCTAssertEqual(testBudget.amountRemaining, Decimal(500))
     }
 
     func testAmountRemainingCalculation_PartialSpending() {
         // Add expense for 300, should have 200 remaining
         let expense = ExpenseTracker.Expense(
-            amount: 300.00,
+            amount: Decimal(300),
             date: Date(),
             notes: "Partial spending",
             category: testCategory
@@ -644,13 +650,13 @@ class BudgetModelTests: XCTestCase {
             return
         }
 
-        XCTAssertEqual(testBudget.amountRemaining, 200.00)
+        XCTAssertEqual(testBudget.amountRemaining, Decimal(200))
     }
 
     func testAmountRemainingCalculation_OverSpending() {
         // When over budget, amountRemaining should be 0 (not negative)
         let expense = ExpenseTracker.Expense(
-            amount: 600.00,
+            amount: Decimal(600),
             date: Date(),
             notes: "Over spending",
             category: testCategory
@@ -664,13 +670,13 @@ class BudgetModelTests: XCTestCase {
             return
         }
 
-        XCTAssertEqual(testBudget.amountRemaining, 0.0)
+        XCTAssertEqual(testBudget.amountRemaining, Decimal(0))
     }
 
     func testAlertThreshold_Below75Percent() {
         // 25% spending should not trigger alert
         let expense = ExpenseTracker.Expense(
-            amount: 125.00,  // 25% of 500
+            amount: Decimal(125),  // 25% of 500
             date: Date(),
             notes: "Low spending",
             category: testCategory
@@ -690,7 +696,7 @@ class BudgetModelTests: XCTestCase {
     func testAlertThreshold_At75Percent() {
         // Exactly 75% should trigger alert
         let expense = ExpenseTracker.Expense(
-            amount: 375.00,  // 75% of 500
+            amount: Decimal(375),  // 75% of 500
             date: Date(),
             notes: "Alert level spending",
             category: testCategory
@@ -710,7 +716,7 @@ class BudgetModelTests: XCTestCase {
     func testAlertThreshold_Above75Percent() {
         // 80% spending should trigger alert
         let expense = ExpenseTracker.Expense(
-            amount: 400.00,  // 80% of 500
+            amount: Decimal(400),  // 80% of 500
             date: Date(),
             notes: "High spending",
             category: testCategory
@@ -730,7 +736,7 @@ class BudgetModelTests: XCTestCase {
     func testWarningThreshold_Below90Percent() {
         // 80% spending should not trigger warning (only alert)
         let expense = ExpenseTracker.Expense(
-            amount: 400.00,  // 80% of 500
+            amount: Decimal(400),  // 80% of 500
             date: Date(),
             notes: "Alert level spending",
             category: testCategory
@@ -751,7 +757,7 @@ class BudgetModelTests: XCTestCase {
     func testWarningThreshold_At90Percent() {
         // Exactly 90% should trigger warning
         let expense = ExpenseTracker.Expense(
-            amount: 450.00,  // 90% of 500
+            amount: Decimal(450),  // 90% of 500
             date: Date(),
             notes: "Warning level spending",
             category: testCategory
@@ -771,7 +777,7 @@ class BudgetModelTests: XCTestCase {
     func testWarningThreshold_Above90Percent() {
         // 95% spending should trigger warning
         let expense = ExpenseTracker.Expense(
-            amount: 475.00,  // 95% of 500
+            amount: Decimal(475),  // 95% of 500
             date: Date(),
             notes: "Critical spending",
             category: testCategory
@@ -796,19 +802,19 @@ class BudgetModelTests: XCTestCase {
         let nextMonth = calendar.date(byAdding: .month, value: 1, to: thisMonth)!
 
         let thisMonthExpense = ExpenseTracker.Expense(
-            amount: 100.00,
+            amount: Decimal(100),
             date: thisMonth.addingTimeInterval(86400),  // First day of month
             notes: "This month",
             category: testCategory
         )
         let lastMonthExpense = ExpenseTracker.Expense(
-            amount: 200.00,
+            amount: Decimal(200),
             date: lastMonth.addingTimeInterval(86400),
             notes: "Last month",
             category: testCategory
         )
         let nextMonthExpense = ExpenseTracker.Expense(
-            amount: 300.00,
+            amount: Decimal(300),
             date: nextMonth.addingTimeInterval(86400),
             notes: "Next month",
             category: testCategory
@@ -826,20 +832,20 @@ class BudgetModelTests: XCTestCase {
         }
 
         // Budget should only count this month's expense
-        XCTAssertEqual(testBudget.calculateCurrentSpending(), 100.00)
+        XCTAssertEqual(testBudget.calculateCurrentSpending(), Decimal(100))
     }
 
     func testCurrentSpendingCalculation_ExcludesDemoExpenses() {
         // Create regular and demo expenses
         let regularExpense = ExpenseTracker.Expense(
-            amount: 100.00,
+            amount: Decimal(100),
             date: Date(),
             notes: "Regular",
             category: testCategory,
             isDemo: false
         )
         let demoExpense = ExpenseTracker.Expense(
-            amount: 200.00,
+            amount: Decimal(200),
             date: Date(),
             notes: "Demo",
             category: testCategory,
@@ -857,15 +863,15 @@ class BudgetModelTests: XCTestCase {
         }
 
         // Budget should only count regular expense, excluding demo
-        XCTAssertEqual(testBudget.calculateCurrentSpending(), 100.00)
+        XCTAssertEqual(testBudget.calculateCurrentSpending(), Decimal(100))
     }
 
     func testMultipleExpensesCalculation() {
         // Create multiple expenses that should sum correctly
         let expenses = [
-            ExpenseTracker.Expense(amount: 50.00, date: Date(), notes: "Lunch", category: testCategory),
-            ExpenseTracker.Expense(amount: 75.00, date: Date(), notes: "Snacks", category: testCategory),
-            ExpenseTracker.Expense(amount: 120.00, date: Date(), notes: "Groceries", category: testCategory)
+            ExpenseTracker.Expense(amount: Decimal(50), date: Date(), notes: "Lunch", category: testCategory),
+            ExpenseTracker.Expense(amount: Decimal(75), date: Date(), notes: "Snacks", category: testCategory),
+            ExpenseTracker.Expense(amount: Decimal(120), date: Date(), notes: "Groceries", category: testCategory)
         ]
 
         for expense in expenses {
@@ -879,22 +885,26 @@ class BudgetModelTests: XCTestCase {
             return
         }
 
-        // Total should be 245.00
-        XCTAssertEqual(testBudget.calculateCurrentSpending(), 245.00)
+        // Total should be 245
+        XCTAssertEqual(testBudget.calculateCurrentSpending(), Decimal(245))
         XCTAssertEqual(testBudget.percentageUsed, 49.0, accuracy: 0.01)
-        XCTAssertEqual(testBudget.amountRemaining, 255.00)
+        XCTAssertEqual(testBudget.amountRemaining, Decimal(255))
     }
 
     func testBudgetDateNormalizedToMonthStart() {
         // When creating budget with a date in the middle of month,
         // it should normalize to start of month
         let midMonthDate = Date().addingTimeInterval(86400 * 15)  // 15 days from now
-        let budget = ExpenseTracker.Budget(
-            category: testCategory,
-            monthlyLimit: 500.00,
-            currentMonth: midMonthDate
-        )
+        do {
+            let budget = try ExpenseTracker.Budget(
+                category: testCategory,
+                monthlyLimit: Decimal(500),
+                currentMonth: midMonthDate
+            )
 
-        XCTAssertEqual(budget.currentMonth, midMonthDate.startOfMonth)
+            XCTAssertEqual(budget.currentMonth, midMonthDate.startOfMonth)
+        } catch {
+            XCTFail("Failed to create budget: \(error)")
+        }
     }
 }

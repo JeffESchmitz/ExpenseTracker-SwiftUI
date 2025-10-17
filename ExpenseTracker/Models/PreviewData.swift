@@ -57,37 +57,41 @@ struct PreviewData {
         context.insert(Expense(amount: 30, date: startOfMonth.addingTimeInterval(86400 * 16), notes: "Shoes", category: shoppingCategory, isDemo: true))
 
         // Create sample budgets
-        context.insert(Budget(
-            category: foodCategory,
-            monthlyLimit: 200,
-            currentMonth: now,
-            notes: "Food and groceries",
-            isDemo: true
-        ))
+        do {
+            context.insert(try Budget(
+                category: foodCategory,
+                monthlyLimit: 200,
+                currentMonth: now,
+                notes: "Food and groceries",
+                isDemo: true
+            ))
 
-        context.insert(Budget(
-            category: transportCategory,
-            monthlyLimit: 150,
-            currentMonth: now,
-            notes: "Gas and maintenance",
-            isDemo: true
-        ))
+            context.insert(try Budget(
+                category: transportCategory,
+                monthlyLimit: 150,
+                currentMonth: now,
+                notes: "Gas and maintenance",
+                isDemo: true
+            ))
 
-        context.insert(Budget(
-            category: entertainmentCategory,
-            monthlyLimit: 100,
-            currentMonth: now,
-            notes: "Entertainment",
-            isDemo: true
-        ))
+            context.insert(try Budget(
+                category: entertainmentCategory,
+                monthlyLimit: 100,
+                currentMonth: now,
+                notes: "Entertainment",
+                isDemo: true
+            ))
 
-        context.insert(Budget(
-            category: shoppingCategory,
-            monthlyLimit: 200,
-            currentMonth: now,
-            notes: "Clothing and shopping",
-            isDemo: true
-        ))
+            context.insert(try Budget(
+                category: shoppingCategory,
+                monthlyLimit: 200,
+                currentMonth: now,
+                notes: "Clothing and shopping",
+                isDemo: true
+            ))
+        } catch {
+            print("Failed to create preview budgets: \(error)")
+        }
 
         try? context.save()
         return container

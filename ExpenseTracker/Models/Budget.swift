@@ -8,6 +8,10 @@
 import Foundation
 import SwiftData
 
+enum BudgetError: Error {
+    case invalidLimit(String)
+}
+
 @Model
 final class Budget {
     @Attribute(.unique) var id: UUID
@@ -27,10 +31,10 @@ final class Budget {
         currentMonth: Date,
         notes: String? = nil,
         isDemo: Bool = false
-    ) {
+    ) throws {
         // Validate monthlyLimit is positive
         guard monthlyLimit > 0 else {
-            fatalError("Budget monthly limit must be positive, got \(monthlyLimit)")
+            throw BudgetError.invalidLimit("Budget monthly limit must be positive, got \(monthlyLimit)")
         }
 
         self.id = id

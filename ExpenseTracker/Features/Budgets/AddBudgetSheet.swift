@@ -99,17 +99,25 @@ struct AddBudgetSheet: View {
             return
         }
 
-        let budget = Budget(
-            category: category,
-            monthlyLimit: monthlyLimit,
-            currentMonth: Date(),
-            notes: notes.isEmpty ? nil : notes,
-            isDemo: false
-        )
+        do {
+            let budget = try Budget(
+                category: category,
+                monthlyLimit: monthlyLimit,
+                currentMonth: Date(),
+                notes: notes.isEmpty ? nil : notes,
+                isDemo: false
+            )
 
-        modelContext.insert(budget)
-        try? modelContext.save()
-        dismiss()
+            modelContext.insert(budget)
+            try modelContext.save()
+            dismiss()
+        } catch let error as BudgetError {
+            errorMessage = "Budget error: \(error.localizedDescription)"
+            showingError = true
+        } catch {
+            errorMessage = "Failed to save budget: \(error.localizedDescription)"
+            showingError = true
+        }
     }
 }
 
