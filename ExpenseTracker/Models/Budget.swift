@@ -92,9 +92,7 @@ extension Date {
 
     var endOfMonth: Date {
         let calendar = Calendar.current
-        var components = DateComponents()
-        components.month = 1
-        components.day = -1
-        return calendar.date(byAdding: components, to: startOfMonth) ?? self
+        guard let interval = calendar.dateInterval(of: .month, for: self) else { return self }
+        return interval.end.addingTimeInterval(-1)
     }
 }

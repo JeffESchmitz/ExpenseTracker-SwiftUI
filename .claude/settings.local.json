@@ -39,7 +39,8 @@
       "Bash(git fetch:*)",
       "Bash(git merge:*)",
       "Read(//Users/Z004S1K/Desktop/Github/JeffESchmitz/expense-tracker-budget/ExpenseTracker/Models/**)",
-      "Read(//Users/Z004S1K/Desktop/Github/JeffESchmitz/expense-tracker-budget/ExpenseTracker/**)"
+      "Read(//Users/Z004S1K/Desktop/Github/JeffESchmitz/expense-tracker-budget/ExpenseTracker/**)",
+      "Bash(git -C /Users/Z004S1K/Desktop/Github/JeffESchmitz/ExpenseTracker-SwiftUI checkout -b tm/jeffrey.schmitz2/jdi/fix-endofmonth-budget-spending)"
     ],
     "deny": [],
     "ask": []

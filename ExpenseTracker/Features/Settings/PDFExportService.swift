@@ -8,6 +8,7 @@
 import Foundation
 import PDFKit
 import SwiftData
+import UIKit
 
 struct PDFExportService {
 
