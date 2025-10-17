@@ -295,6 +295,51 @@ struct CSVService {
 
         return fields
     }
+
+    // MARK: - JSON Export
+
+    static func exportExpensesAsJSON(_ expenses: [Expense]) -> String {
+        var jsonArray: [[String: Any]] = []
+
+        for expense in expenses {
+            let dateString = importDateFormatter.string(from: expense.date)
+            let jsonObject: [String: Any] = [
+                "date": dateString,
+                "amount": expense.amount.description,
+                "category": expense.category.name,
+                "notes": expense.notes ?? ""
+            ]
+            jsonArray.append(jsonObject)
+        }
+
+        do {
+            let jsonData = try JSONSerialization.data(withJSONObject: jsonArray, options: [.prettyPrinted, .sortedKeys])
+            if let jsonString = String(data: jsonData, encoding: .utf8) {
+                return jsonString
+            }
+        } catch {
+            print("Failed to serialize JSON: \(error)")
+        }
+
+        return "[]"
+    }
+
+    static func createTempJSONFile(content: String) -> URL? {
+        let tempDir = FileManager.default.temporaryDirectory
+        let timestampFormatter = DateFormatter()
+        timestampFormatter.dateFormat = "yyyy-MM-dd_HH-mm"
+        let timestamp = timestampFormatter.string(from: Date())
+        let filename = "expenses-\(timestamp).json"
+        let fileURL = tempDir.appendingPathComponent(filename)
+
+        do {
+            try content.write(to: fileURL, atomically: true, encoding: .utf8)
+            return fileURL
+        } catch {
+            print("Failed to create JSON file: \(error)")
+            return nil
+        }
+    }
 }
 
 extension DateFormatter {
