@@ -14,10 +14,9 @@ struct CSVService {
 
     static func exportExpenses(_ expenses: [Expense]) -> String {
         var csv = "date,amount,category,notes\n"
-        dateFormatter.dateFormat = "yyyy-MM-dd"
 
         for expense in expenses {
-            let date = dateFormatter.string(from: expense.date)
+            let date = importDateFormatter.string(from: expense.date)
             let amount = "\(expense.amount)"
             let category = expense.category.name
             let notes = escapeCSVField(expense.notes ?? "")
@@ -30,9 +29,9 @@ struct CSVService {
 
     static func createTempCSVFile(content: String) -> URL? {
         let tempDir = FileManager.default.temporaryDirectory
-    let timestampFormatter = DateFormatter()
-    timestampFormatter.dateFormat = "yyyy-MM-dd_HH-mm"
-    let timestamp = timestampFormatter.string(from: Date())
+        let timestampFormatter = DateFormatter()
+        timestampFormatter.dateFormat = "yyyy-MM-dd_HH-mm"
+        let timestamp = timestampFormatter.string(from: Date())
         let filename = "expenses-\(timestamp).csv"
         let fileURL = tempDir.appendingPathComponent(filename)
 
@@ -102,9 +101,6 @@ struct CSVService {
         var invalidRows = 0
         var errors: [String] = []
         var categories = existingCategories
-
-    // Use shared formatter for imports
-    let dateFormatter = importDateFormatter
 
         for (index, line) in dataLines.enumerated() {
             let lineNumber = index + 2 // +2 because we skip header and arrays are 0-indexed
