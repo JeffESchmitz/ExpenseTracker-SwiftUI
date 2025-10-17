@@ -311,6 +311,9 @@ struct DashboardView: View {
                                 CategoryBreakdownChartView(categoryData: categoryData)
                             }
                         }
+
+                        // Budget Overview
+                        BudgetProgressCard()
                     }
                     .padding(.vertical)
                 }

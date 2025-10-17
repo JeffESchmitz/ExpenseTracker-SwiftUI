@@ -17,7 +17,7 @@ struct ExpenseTrackerApp: App {
                     seedDefaultCategoriesIfNeeded()
                 }
         }
-        .modelContainer(for: [Expense.self, Category.self])
+        .modelContainer(for: [Expense.self, Category.self, Budget.self])
     }
     private func seedDefaultCategoriesIfNeeded() {
         let context = ModelContext(modelContainer)
@@ -61,7 +61,8 @@ struct ExpenseTrackerApp: App {
         do {
             let schema = Schema([
                 Expense.self,
-                Category.self
+                Category.self,
+                Budget.self
             ])
             let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
             return try ModelContainer(for: schema, configurations: [modelConfiguration])
@@ -77,7 +78,8 @@ struct ExpenseTrackerApp: App {
             do {
                 let schema = Schema([
                     Expense.self,
-                    Category.self
+                    Category.self,
+                    Budget.self
                 ])
                 let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
                 return try ModelContainer(for: schema, configurations: [modelConfiguration])
