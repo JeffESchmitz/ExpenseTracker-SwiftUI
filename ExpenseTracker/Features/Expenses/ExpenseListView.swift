@@ -258,8 +258,19 @@ struct ExpenseListView: View {
                                 Image(systemName: "square.and.arrow.up")
                             }
                         } else {
-                            Button {
-                                exportCSV()
+                            Menu {
+                                Button(action: exportCSV) {
+                                    Label("CSV", systemImage: "doc.plaintext")
+                                }
+                                Button(action: exportJSON) {
+                                    Label("JSON", systemImage: "doc.text")
+                                }
+                                Button(action: exportPDF) {
+                                    Label("PDF", systemImage: "doc.pdf")
+                                }
+                                Button(action: exportExcel) {
+                                    Label("Excel (.xlsx)", systemImage: "doc.richtext")
+                                }
                             } label: {
                                 Image(systemName: "square.and.arrow.up")
                             }
@@ -355,6 +366,41 @@ struct ExpenseListView: View {
         }
     }
 
+    private func exportJSON() {
+        let jsonContent = CSVService.exportExpensesAsJSON(filteredExpenses)
+
+        if let fileURL = CSVService.createTempJSONFile(content: jsonContent) {
+            exportFileURL = fileURL
+
+            // Success haptic
+            let notificationFeedback = UINotificationFeedbackGenerator()
+            notificationFeedback.notificationOccurred(.success)
+        }
+    }
+
+    private func exportPDF() {
+        if let pdfData = PDFExportService.exportExpensesAsPDF(filteredExpenses) {
+            if let fileURL = PDFExportService.createTempPDFFile(data: pdfData) {
+                exportFileURL = fileURL
+
+                // Success haptic
+                let notificationFeedback = UINotificationFeedbackGenerator()
+                notificationFeedback.notificationOccurred(.success)
+            }
+        }
+    }
+
+    private func exportExcel() {
+        if let excelData = ExcelExportService.exportExpensesAsExcel(filteredExpenses) {
+            if let fileURL = ExcelExportService.createTempExcelFile(data: excelData) {
+                exportFileURL = fileURL
+
+                // Success haptic
+                let notificationFeedback = UINotificationFeedbackGenerator()
+                notificationFeedback.notificationOccurred(.success)
+            }
+        }
+    }
 
 }
 
