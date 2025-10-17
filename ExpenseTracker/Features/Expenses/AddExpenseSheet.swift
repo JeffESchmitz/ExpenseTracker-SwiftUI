@@ -12,44 +12,44 @@ struct AddExpenseSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Query private var categories: [Category]
-    
+
     // Edit mode support
     let expense: Expense?
-    
+
     // Form state
     @State private var amount: Decimal = 0
     @State private var selectedDate = Date()
     @State private var selectedCategory: Category?
     @State private var notes = ""
     @State private var showingDeleteConfirmation = false
-    
+
     // Focus and validation
     @FocusState private var isAmountFocused: Bool
     @State private var amountText = ""
-    
+
     private var isEditing: Bool {
         expense != nil
     }
-    
+
     private var isValid: Bool {
         amount > 0 && selectedCategory != nil
     }
-    
+
     private var amountError: String? {
         if !amountText.isEmpty && amount <= 0 {
             return "Amount must be greater than $0.00"
         }
         return nil
     }
-    
+
     private var notesCharacterCount: Int {
         notes.count
     }
-    
+
     init(expense: Expense? = nil) {
         self.expense = expense
     }
-    
+
     var body: some View {
         NavigationStack {
             Form {
@@ -65,7 +65,7 @@ struct AddExpenseSheet: View {
                         .onChange(of: amount) { _, newValue in
                             amountText = String(describing: newValue)
                         }
-                        
+
                         if let error = amountError {
                             Label(error, systemImage: "exclamationmark.triangle.fill")
                                 .font(.caption)
@@ -75,7 +75,7 @@ struct AddExpenseSheet: View {
                 } header: {
                     Text("Amount")
                 }
-                
+
                 Section("Date") {
                     DatePicker(
                         "Date",
@@ -84,7 +84,7 @@ struct AddExpenseSheet: View {
                         displayedComponents: .date
                     )
                 }
-                
+
                 Section("Category") {
                     Picker("Category", selection: $selectedCategory) {
                         ForEach(categories, id: \.self) { category in
@@ -103,7 +103,7 @@ struct AddExpenseSheet: View {
                         }
                     }
                 }
-                
+
                 Section {
                     VStack(alignment: .leading, spacing: 8) {
                         TextField("What was this for?", text: $notes, axis: .vertical)
@@ -113,7 +113,7 @@ struct AddExpenseSheet: View {
                                     notes = String(newValue.prefix(200))
                                 }
                             }
-                        
+
                         HStack {
                             Spacer()
                             Text("\(notesCharacterCount)/200")
@@ -134,7 +134,7 @@ struct AddExpenseSheet: View {
                         dismiss()
                     }
                 }
-                
+
                 if isEditing {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button("Delete", role: .destructive) {
@@ -142,7 +142,7 @@ struct AddExpenseSheet: View {
                         }
                     }
                 }
-                
+
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(isEditing ? "Update" : "Save") {
                         saveExpense()
@@ -150,7 +150,7 @@ struct AddExpenseSheet: View {
                     .disabled(!isValid)
                     .fontWeight(.semibold)
                 }
-                
+
                 ToolbarItem(placement: .keyboard) {
                     HStack {
                         Spacer()
@@ -175,7 +175,7 @@ struct AddExpenseSheet: View {
             setupInitialValues()
         }
     }
-    
+
     private func setupInitialValues() {
         if let expense = expense {
             // Edit mode - populate with existing data
@@ -190,10 +190,10 @@ struct AddExpenseSheet: View {
         }
         amountText = String(describing: amount)
     }
-    
+
     private func saveExpense() {
         guard isValid, let category = selectedCategory else { return }
-        
+
         if let existingExpense = expense {
             // Update existing expense
             existingExpense.amount = amount
@@ -210,38 +210,38 @@ struct AddExpenseSheet: View {
             )
             modelContext.insert(newExpense)
         }
-        
+
         do {
             try modelContext.save()
-            
+
             // Success haptic
             let notificationFeedback = UINotificationFeedbackGenerator()
             notificationFeedback.notificationOccurred(.success)
-            
+
             dismiss()
         } catch {
             print("Failed to save expense: \(error)")
         }
     }
-    
+
     private func deleteExpense() {
         guard let expense = expense else { return }
-        
+
         modelContext.delete(expense)
-        
+
         do {
             try modelContext.save()
-            
+
             // Success haptic
             let notificationFeedback = UINotificationFeedbackGenerator()
             notificationFeedback.notificationOccurred(.success)
-            
+
             dismiss()
         } catch {
             print("Failed to delete expense: \(error)")
         }
     }
-    
+
     private func colorForCategory(_ colorName: String) -> Color {
         switch colorName.lowercased() {
         case "orange": return .orange

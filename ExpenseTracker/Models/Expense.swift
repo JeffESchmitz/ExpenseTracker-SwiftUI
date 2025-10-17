@@ -14,10 +14,10 @@ final class Expense {
     var date: Date
     var notes: String?
     var isDemo: Bool
-    
+
     @Relationship
     var category: Category
-    
+
     init(amount: Decimal, date: Date, notes: String? = nil, category: Category, isDemo: Bool = false) {
         self.amount = amount
         self.date = date

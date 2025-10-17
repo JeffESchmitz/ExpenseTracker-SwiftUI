@@ -9,35 +9,32 @@ import Foundation
 import SwiftData
 
 struct CSVService {
-    
+
     // MARK: - Export
-    
+
     static func exportExpenses(_ expenses: [Expense]) -> String {
         var csv = "date,amount,category,notes\n"
-        
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd"
-        
+
         for expense in expenses {
-            let date = dateFormatter.string(from: expense.date)
+            let date = importDateFormatter.string(from: expense.date)
             let amount = "\(expense.amount)"
             let category = expense.category.name
             let notes = escapeCSVField(expense.notes ?? "")
-            
+
             csv += "\(date),\(amount),\(category),\(notes)\n"
         }
-        
+
         return csv
     }
-    
+
     static func createTempCSVFile(content: String) -> URL? {
         let tempDir = FileManager.default.temporaryDirectory
-        let timestamp = DateFormatter().apply {
-            $0.dateFormat = "yyyy-MM-dd_HH-mm"
-        }.string(from: Date())
+        let timestampFormatter = DateFormatter()
+        timestampFormatter.dateFormat = "yyyy-MM-dd_HH-mm"
+        let timestamp = timestampFormatter.string(from: Date())
         let filename = "expenses-\(timestamp).csv"
         let fileURL = tempDir.appendingPathComponent(filename)
-        
+
         do {
             try content.write(to: fileURL, atomically: true, encoding: .utf8)
             return fileURL
@@ -46,16 +43,16 @@ struct CSVService {
             return nil
         }
     }
-    
+
     // MARK: - Import
-    
+
     struct ImportResult {
         let imported: Int
         let duplicatesSkipped: Int
         let invalidRows: Int
         let errors: [String]
     }
-    
+
     static func importCSV(
         from url: URL,
         into modelContext: ModelContext,
@@ -79,7 +76,7 @@ struct CSVService {
             )
         }
     }
-    
+
     private static func parseCSVContent(
         _ content: String,
         modelContext: ModelContext,
@@ -88,102 +85,47 @@ struct CSVService {
     ) -> ImportResult {
         let lines = content.components(separatedBy: .newlines).filter { !$0.isEmpty }
         guard lines.count > 1 else {
-            return ImportResult(imported: 0, duplicatesSkipped: 0, invalidRows: 1, errors: ["Empty or invalid CSV file"])
+            return ImportResult(
+                imported: 0,
+                duplicatesSkipped: 0,
+                invalidRows: 1,
+                errors: ["Empty or invalid CSV file"]
+            )
         }
-        
+
         // Skip header row
         let dataLines = Array(lines.dropFirst())
-        
+
         var imported = 0
         var duplicatesSkipped = 0
         var invalidRows = 0
         var errors: [String] = []
         var categories = existingCategories
-        
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd"
-        
+
         for (index, line) in dataLines.enumerated() {
             let lineNumber = index + 2 // +2 because we skip header and arrays are 0-indexed
-            
-            let fields = parseCSVLine(line)
-            guard fields.count >= 3 else {
-                invalidRows += 1
-                errors.append("Line \(lineNumber): Not enough fields")
-                continue
-            }
-            
-            // Parse date
-            guard let date = dateFormatter.date(from: fields[0]) else {
-                invalidRows += 1
-                errors.append("Line \(lineNumber): Invalid date format '\(fields[0])'")
-                continue
-            }
-            
-            // Parse amount
-            guard let amount = Decimal(string: fields[1]), amount > 0 else {
-                invalidRows += 1
-                errors.append("Line \(lineNumber): Invalid amount '\(fields[1])'")
-                continue
-            }
-            
-            // Get or create category
-            let categoryName = fields[2]
-            var category = categories.first { $0.name.lowercased() == categoryName.lowercased() }
-            if category == nil {
-                // Create new category
-                let newCategory = Category(
-                    name: categoryName,
-                    color: "gray",
-                    symbolName: "square.grid.2x2.fill"
-                )
-                modelContext.insert(newCategory)
-                categories.append(newCategory)
-                category = newCategory
-            }
-            
-            guard let finalCategory = category else {
-                invalidRows += 1
-                errors.append("Line \(lineNumber): Failed to create category '\(categoryName)'")
-                continue
-            }
-            
-            // Get notes (field 4 if present)
-            let notes = fields.count > 3 && !fields[3].isEmpty ? fields[3] : nil
-            
-            // Check for duplicates
-            let normalizedNotes = notes?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-            let isDuplicate = existingExpenses.contains { expense in
-                let expenseNormalizedNotes = expense.notes?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-                return Calendar.current.isDate(expense.date, inSameDayAs: date) &&
-                       expense.amount == amount &&
-                       expenseNormalizedNotes == normalizedNotes &&
-                       expense.category.name.lowercased() == categoryName.lowercased()
-            }
-            
-            if isDuplicate {
-                duplicatesSkipped += 1
-                continue
-            }
-            
-            // Create and insert expense
-            let expense = Expense(
-                amount: amount,
-                date: date,
-                notes: notes,
-                category: finalCategory
+
+            let result = processDataLine(
+                line: line,
+                lineNumber: lineNumber,
+                modelContext: modelContext,
+                existingExpenses: existingExpenses,
+                categories: &categories
             )
-            modelContext.insert(expense)
-            imported += 1
+
+            imported += result.importedDelta
+            duplicatesSkipped += result.duplicatesDelta
+            invalidRows += result.invalidDelta
+            errors.append(contentsOf: result.errors)
         }
-        
+
         // Save changes
         do {
             try modelContext.save()
         } catch {
             errors.append("Failed to save imported expenses: \(error.localizedDescription)")
         }
-        
+
         return ImportResult(
             imported: imported,
             duplicatesSkipped: duplicatesSkipped,
@@ -191,54 +133,166 @@ struct CSVService {
             errors: errors
         )
     }
-    
+
     // MARK: - Helper Functions
-    
+
+    private struct ProcessResult {
+        var importedDelta: Int
+        var duplicatesDelta: Int
+        var invalidDelta: Int
+        var errors: [String]
+    }
+
+    private static let importDateFormatter: DateFormatter = {
+        let dateFormatterInstance = DateFormatter()
+        dateFormatterInstance.dateFormat = "yyyy-MM-dd"
+        return dateFormatterInstance
+    }()
+
+    private static func processDataLine(
+        line: String,
+        lineNumber: Int,
+        modelContext: ModelContext,
+        existingExpenses: [Expense],
+        categories: inout [Category]
+    ) -> ProcessResult {
+        var result = ProcessResult(importedDelta: 0, duplicatesDelta: 0, invalidDelta: 0, errors: [])
+
+        let fields = parseCSVLine(line)
+        guard fields.count >= 3 else {
+            result.invalidDelta += 1
+            result.errors.append("Line \(lineNumber): Not enough fields")
+            return result
+        }
+
+        // Parse date
+        guard let date = importDateFormatter.date(from: fields[0]) else {
+            result.invalidDelta += 1
+            result.errors.append("Line \(lineNumber): Invalid date format '\(fields[0])'")
+            return result
+        }
+
+        // Parse amount
+        guard let amount = Decimal(string: fields[1]), amount > 0 else {
+            result.invalidDelta += 1
+            result.errors.append("Line \(lineNumber): Invalid amount '\(fields[1])'")
+            return result
+        }
+
+        // Get or create category
+        let categoryName = fields[2]
+        guard let finalCategory = getOrCreateCategory(
+            name: categoryName,
+            modelContext: modelContext,
+            categories: &categories
+        ) else {
+            result.invalidDelta += 1
+            result.errors.append("Line \(lineNumber): Failed to create category '\(categoryName)'")
+            return result
+        }
+
+        // Get notes (field 4 if present)
+        let notes = fields.count > 3 && !fields[3].isEmpty ? fields[3] : nil
+
+        // Check for duplicates
+        if isDuplicateExpense(
+            existingExpenses: existingExpenses,
+            date: date,
+            amount: amount,
+            notes: notes,
+            categoryName: categoryName
+        ) {
+            result.duplicatesDelta += 1
+            return result
+        }
+
+        // Create and insert expense
+        let expense = Expense(amount: amount, date: date, notes: notes, category: finalCategory)
+        modelContext.insert(expense)
+        result.importedDelta += 1
+
+        return result
+    }
+
+    private static func getOrCreateCategory(
+        name: String,
+        modelContext: ModelContext,
+        categories: inout [Category]
+    ) -> Category? {
+        if let existing = categories.first(where: { $0.name.lowercased() == name.lowercased() }) {
+            return existing
+        }
+
+        let newCategory = Category(name: name, color: "gray", symbolName: "square.grid.2x2.fill")
+        modelContext.insert(newCategory)
+        categories.append(newCategory)
+        return newCategory
+    }
+
+    private static func isDuplicateExpense(
+        existingExpenses: [Expense],
+        date: Date,
+        amount: Decimal,
+        notes: String?,
+        categoryName: String
+    ) -> Bool {
+        let normalizedNotes = notes?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return existingExpenses.contains { expense in
+            let expenseNormalizedNotes = expense.notes?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .lowercased()
+            return Calendar.current.isDate(expense.date, inSameDayAs: date)
+                && expense.amount == amount
+                && expenseNormalizedNotes == normalizedNotes
+                && expense.category.name.lowercased() == categoryName.lowercased()
+        }
+    }
+
     private static func escapeCSVField(_ field: String) -> String {
         let needsQuotes = field.contains(",") || field.contains("\"") || field.contains("\n") || field.contains("\r")
-        
+
         if needsQuotes {
             let escaped = field.replacingOccurrences(of: "\"", with: "\"\"")
             return "\"\(escaped)\""
         }
-        
+
         return field
     }
-    
+
     private static func parseCSVLine(_ line: String) -> [String] {
         var fields: [String] = []
         var currentField = ""
         var insideQuotes = false
-        var i = line.startIndex
-        
-        while i < line.endIndex {
-            let char = line[i]
-            
+        var charIndex = line.startIndex
+
+        while charIndex < line.endIndex {
+            let char = line[charIndex]
+
             if char == "\"" {
-                let nextIndex = line.index(after: i)
+                let nextIndex = line.index(after: charIndex)
                 if insideQuotes && nextIndex < line.endIndex && line[nextIndex] == "\"" {
                     // Escaped quote
                     currentField += "\""
-                    i = line.index(after: nextIndex)
+                    charIndex = line.index(after: nextIndex)
                 } else {
                     // Toggle quote state
                     insideQuotes.toggle()
-                    i = nextIndex
+                    charIndex = nextIndex
                 }
             } else if char == "," && !insideQuotes {
                 // Field separator
                 fields.append(currentField)
                 currentField = ""
-                i = line.index(after: i)
+                charIndex = line.index(after: charIndex)
             } else {
                 currentField += String(char)
-                i = line.index(after: i)
+                charIndex = line.index(after: charIndex)
             }
         }
-        
+
         // Add the last field
         fields.append(currentField)
-        
+
         return fields
     }
 }

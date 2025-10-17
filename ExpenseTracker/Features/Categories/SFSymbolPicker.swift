@@ -10,10 +10,10 @@ import SwiftUI
 struct SFSymbolPicker: View {
     @Environment(\.dismiss) private var dismiss
     @State private var searchText = ""
-    
+
     let selectedSymbol: String
     let onSymbolSelected: (String) -> Void
-    
+
     private let suggestedSymbols = [
         "fork.knife", "car.fill", "popcorn.fill", "bag.fill", "creditcard.fill",
         "house.fill", "cart.fill", "fuelpump.fill", "dollarsign.circle.fill", "gift.fill",
@@ -21,7 +21,7 @@ struct SFSymbolPicker: View {
         "book.fill", "airplane", "bicycle", "pawprint.fill", "leaf.fill",
         "hammer.fill", "paintbrush.fill", "wrench.fill", "lightbulb.fill", "camera.fill"
     ]
-    
+
     private let commonSymbols = [
         "doc.text.fill", "folder.fill", "tray.fill", "archivebox.fill", "paperplane.fill",
         "tray.full.fill", "externaldrive.fill", "internaldrive.fill", "opticaldiscdrive.fill", "tv.fill",
@@ -40,18 +40,18 @@ struct SFSymbolPicker: View {
         "star.fill", "heart.fill", "suit.heart.fill", "diamond.fill", "club.fill",
         "spade.fill", "crown.fill", "gem", "key.fill", "lock.fill"
     ]
-    
+
     private var filteredSymbols: [String] {
         if searchText.isEmpty {
             return []
         }
-        
+
         let searchQuery = searchText.lowercased()
         return commonSymbols.filter { symbol in
             symbol.localizedCaseInsensitiveContains(searchQuery)
         }
     }
-    
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
@@ -61,7 +61,7 @@ struct SFSymbolPicker: View {
                         .foregroundStyle(.secondary)
                     TextField("Search symbols...", text: $searchText)
                         .textFieldStyle(.plain)
-                    
+
                     if !searchText.isEmpty {
                         Button("Clear") {
                             searchText = ""
@@ -73,7 +73,7 @@ struct SFSymbolPicker: View {
                 .padding()
                 .background(.quaternary, in: RoundedRectangle(cornerRadius: 10))
                 .padding()
-                
+
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
                         // Suggested Symbols Section
@@ -82,7 +82,7 @@ struct SFSymbolPicker: View {
                                 Text("Suggested")
                                     .font(.headline)
                                     .padding(.horizontal)
-                                
+
                                 LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 6), spacing: 12) {
                                     ForEach(suggestedSymbols, id: \.self) { symbol in
                                         symbolTile(symbol)
@@ -91,14 +91,14 @@ struct SFSymbolPicker: View {
                                 .padding(.horizontal)
                             }
                         }
-                        
+
                         // Search Results Section
                         if !searchText.isEmpty && !filteredSymbols.isEmpty {
                             VStack(alignment: .leading, spacing: 12) {
                                 Text("Search Results")
                                     .font(.headline)
                                     .padding(.horizontal)
-                                
+
                                 LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 6), spacing: 12) {
                                     ForEach(filteredSymbols, id: \.self) { symbol in
                                         symbolTile(symbol)
@@ -107,7 +107,7 @@ struct SFSymbolPicker: View {
                                 .padding(.horizontal)
                             }
                         }
-                        
+
                         if !searchText.isEmpty && filteredSymbols.isEmpty {
                             VStack(spacing: 8) {
                                 Image(systemName: "magnifyingglass")
@@ -138,7 +138,7 @@ struct SFSymbolPicker: View {
             }
         }
     }
-    
+
     private func symbolTile(_ symbol: String) -> some View {
         Button {
             onSymbolSelected(symbol)
@@ -154,7 +154,7 @@ struct SFSymbolPicker: View {
                         RoundedRectangle(cornerRadius: 8)
                             .stroke(selectedSymbol == symbol ? .blue : .clear, lineWidth: 2)
                     )
-                
+
                 Text(symbol)
                     .font(.caption2)
                     .lineLimit(1)

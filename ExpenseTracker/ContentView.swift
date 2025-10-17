@@ -15,19 +15,19 @@ struct ContentView: View {
                     Image(systemName: "list.bullet")
                     Text("Expenses")
                 }
-            
+
             DashboardView()
                 .tabItem {
                     Image(systemName: "chart.pie")
                     Text("Dashboard")
                 }
-            
+
             CategoriesView()
                 .tabItem {
                     Image(systemName: "tag")
                     Text("Categories")
                 }
-            
+
             SettingsView()
                 .tabItem {
                     Image(systemName: "gear")

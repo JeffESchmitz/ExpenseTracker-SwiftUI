@@ -2,7 +2,7 @@
 
 <img width="512" height="512" alt="ExpenseTracker-blue" src="https://github.com/user-attachments/assets/2b81880e-257a-4edd-b492-08e7c9f881cb" />
 
-  
+
 # 💰 ExpenseTracker-SwiftUI
 
 **A modern SwiftUI expense tracking app built with SwiftData and Swift Charts**
@@ -17,7 +17,7 @@ Track your spending with beautiful visualizations, smart filtering, and comprehe
 
 </div>
 
-<!-- 
+<!--
 Hero artwork placeholder - to add artwork:
 1. Save your artwork image as `.github/assets/expense-tracker-hero.png`
 2. Uncomment the line below:
@@ -68,7 +68,7 @@ This app follows a **pure SwiftUI + SwiftData** architecture without ViewModels:
 
 ### SwiftData Benefits
 - **Native SwiftUI Integration**: Designed specifically for SwiftUI's declarative approach
-- **Type Safety**: Compile-time checking for relationships and queries  
+- **Type Safety**: Compile-time checking for relationships and queries
 - **Automatic Migration**: Schema evolution handled by the framework
 - **Performance**: Optimized for iOS with lazy loading and efficient updates
 
@@ -90,7 +90,7 @@ ExpenseTracker/
 
 ### Swift Charts Integration
 - **BarMark** charts for monthly spending trends
-- **SectorMark** pie charts for category breakdowns  
+- **SectorMark** pie charts for category breakdowns
 - **Accessibility** labels and values for all chart elements
 - **Dynamic Data** updates with smooth animations
 
@@ -156,7 +156,7 @@ xcodebuild clean -scheme ExpenseTracker
 
 The app features a clean **4-tab navigation**:
 - **💸 Expenses**: List, search, filter, and manage all expenses
-- **📊 Dashboard**: Visual analytics with charts and spending insights  
+- **📊 Dashboard**: Visual analytics with charts and spending insights
 - **🏷️ Categories**: Create and manage expense categories
 - **⚙️ Settings**: App preferences and utilities
 
