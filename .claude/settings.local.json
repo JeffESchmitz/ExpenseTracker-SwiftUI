@@ -33,7 +33,11 @@
       "Bash(swiftlint lint:*)",
       "Bash(swiftlint:*)",
       "Bash(xcrun xcodebuild:*)",
-      "Bash(gh pr comment:*)"
+      "Bash(gh pr comment:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr status:*)",
+      "Bash(git fetch:*)",
+      "Bash(git merge:*)"
     ],
     "deny": [],
     "ask": []
