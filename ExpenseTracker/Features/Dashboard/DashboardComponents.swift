@@ -220,13 +220,6 @@ struct DashboardEmptyStateView: View {
             )
 
             VStack(spacing: 8) {
-                #if DEBUG
-                Button("Insert Sample Data (Debug)") {
-                    insertSampleExpenses()
-                }
-                .buttonStyle(.borderedProminent)
-                #endif
-
                 Button("Adjust Filters…") {
                     onShowFilters()
                 }
@@ -235,55 +228,6 @@ struct DashboardEmptyStateView: View {
             .padding(.horizontal)
         }
     }
-
-    #if DEBUG
-    private func insertSampleExpenses() {
-        let categories = try? modelContext.fetch(FetchDescriptor<Category>())
-        guard let categories = categories, !categories.isEmpty else { return }
-
-        let calendar = Calendar.current
-        let now = Date()
-
-        // Create sample expenses across 12 months with varied amounts
-        var sampleExpenses: [Expense] = []
-
-        for monthsAgo in 0..<12 {
-            guard let monthDate = calendar.date(byAdding: .month, value: -monthsAgo, to: now) else {
-                continue
-            }
-
-            // Create 5-15 expenses per month with realistic variation
-            let expenseCount = Int.random(in: 5...15)
-
-            for _ in 0..<expenseCount {
-                let randomDay = Int.random(in: 1...28)
-                guard let expenseDate = calendar.date(bySetting: .day, value: randomDay, of: monthDate)
-                else {
-                    continue
-                }
-
-                let randomCategory = categories.randomElement()!
-                let baseAmount = Decimal(Double.random(in: 10...200))
-                let notes = [
-                    "Groceries", "Coffee", "Gas", "Dinner", "Shopping", "Bills", "Entertainment", nil
-                ].randomElement()!
-
-                sampleExpenses.append(Expense(
-                    amount: baseAmount,
-                    date: expenseDate,
-                    notes: notes,
-                    category: randomCategory
-                ))
-            }
-        }
-
-        for expense in sampleExpenses {
-            modelContext.insert(expense)
-        }
-
-        try? modelContext.save()
-    }
-    #endif
 }
 
 // MARK: - Helpers
