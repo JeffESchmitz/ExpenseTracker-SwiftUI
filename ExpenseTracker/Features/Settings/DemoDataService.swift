@@ -21,13 +21,13 @@ struct DemoDataService {
 
         guard hasCategories(categories) else { return 0 }
 
-    let calendar = Calendar.current
-    let now = Date()
-    let expenseCount = createExpenseCount()
-    print("🎭 DemoDataService: Will create \(expenseCount) demo expenses")
+        let calendar = Calendar.current
+        let now = Date()
+        let expenseCount = createExpenseCount()
+        print("🎭 DemoDataService: Will create \(expenseCount) demo expenses")
 
-    // Sample notes for realistic variety
-    let sampleNotes = DemoDataService.sampleNotes
+        // Sample notes for realistic variety
+        let sampleNotes: [String?] = [
             "Coffee and pastry",
             "Grocery shopping",
             "Gas station fill-up",
@@ -196,8 +196,8 @@ struct DemoDataService {
         // Realistic amount based on category
         let amount = generateRealisticAmount(for: randomCategory.name)
 
-    // Random notes (some expenses have no notes)
-    let notes = sampleNotes.randomElement() ?? nil
+        // Random notes (some expenses have no notes)
+        let notes = sampleNotes.randomElement() ?? nil
 
         return Expense(
             amount: amount,
