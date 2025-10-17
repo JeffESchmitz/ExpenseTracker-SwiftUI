@@ -12,6 +12,7 @@ struct SettingsDemoSection: View {
     @Binding var demoModeEnabled: Bool
     @Binding var showingDemoDeleteConfirmation: Bool
     var generateAction: () -> Void
+    var modelContext: ModelContext
 
     var body: some View {
         Section {
@@ -40,7 +41,7 @@ struct SettingsDemoSection: View {
             }
 
             if demoModeEnabled {
-                let demoCount = DemoDataService.countDemoExpenses(modelContext: ModelContext.shared)
+                let demoCount = DemoDataService.countDemoExpenses(modelContext: modelContext)
 
                 if demoCount == 0 {
                     HStack {

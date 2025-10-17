@@ -95,7 +95,8 @@ struct SettingsView: View {
                 SettingsDemoSection(
                     demoModeEnabled: $demoModeEnabled,
                     showingDemoDeleteConfirmation: $showingDemoDeleteConfirmation,
-                    generateAction: generateDemoData
+                    generateAction: generateDemoData,
+                    modelContext: modelContext
                 )
 
                 // Data Section (extracted)
