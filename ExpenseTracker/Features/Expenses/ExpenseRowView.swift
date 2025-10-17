@@ -9,7 +9,7 @@ import SwiftUI
 
 struct ExpenseRowView: View {
     let expense: Expense
-    
+
     var body: some View {
         HStack {
             // Category icon
@@ -17,20 +17,20 @@ struct ExpenseRowView: View {
                 .foregroundStyle(colorForCategory(expense.category.color))
                 .font(.title2)
                 .frame(width: 30)
-            
+
             // Expense details
             VStack(alignment: .leading, spacing: 2) {
                 Text(expense.notes?.isEmpty == false ? expense.notes! : "No description")
                     .font(.body)
                     .lineLimit(2)
-                
+
                 Text(expense.date, format: .dateTime.year().month(.abbreviated).day())
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            
+
             Spacer()
-            
+
             // Amount
             Text(expense.amount, format: .currency(code: Locale.current.currency?.identifier ?? "USD"))
                 .font(.body)
@@ -38,7 +38,7 @@ struct ExpenseRowView: View {
         }
         .padding(.vertical, 2)
     }
-    
+
     private func colorForCategory(_ colorName: String) -> Color {
         switch colorName.lowercased() {
         case "orange": return .orange
@@ -64,7 +64,7 @@ struct ExpenseRowView: View {
                 category: Category(name: "Food", color: "orange", symbolName: "fork.knife")
             )
         )
-        
+
         ExpenseRowView(
             expense: Expense(
                 amount: Decimal(150.00),

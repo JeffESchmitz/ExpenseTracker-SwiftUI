@@ -10,7 +10,7 @@ import SwiftUI
 struct ColorPalette: View {
     let selectedColor: String
     let onColorSelected: (String) -> Void
-    
+
     private let colors = [
         ("green", Color.green),
         ("blue", Color.blue),
@@ -24,7 +24,7 @@ struct ColorPalette: View {
         ("brown", Color.brown),
         ("gray", Color.gray)
     ]
-    
+
     var body: some View {
         LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 6), spacing: 12) {
             ForEach(colors, id: \.0) { colorName, color in
@@ -32,7 +32,7 @@ struct ColorPalette: View {
             }
         }
     }
-    
+
     private func colorSwatch(colorName: String, color: Color) -> some View {
         Button {
             onColorSelected(colorName)

@@ -21,6 +21,14 @@ jobs:
         with:
           xcode-version: '16.2.0'
 
+      - name: Install SwiftLint
+        run: |
+          brew install swiftlint
+
+      - name: Run SwiftLint
+        run: |
+          swiftlint lint --strict
+
       - name: Build for testing (no sim boot)
         run: |
           set -o pipefail

@@ -29,7 +29,9 @@
       "mcp__ide__getDiagnostics",
       "Bash(git -C /Users/Z004S1K/Desktop/Github/JeffESchmitz/ExpenseTracker-SwiftUI add -A)",
       "Bash(git -C /Users/Z004S1K/Desktop/Github/JeffESchmitz/ExpenseTracker-SwiftUI commit -m \"refactor: extract Dashboard view components to reduce file and type body length\n\n- Extract SummaryCardView, TrendCardView, and TopCategoryCardView into separate components\n- Extract MonthlyTrendChartView and CategoryBreakdownChartView chart components\n- Extract DashboardEmptyStateView for empty state UI\n- Move colorForCategory helper function to DashboardComponents file\n- Fix variable name ''i'' to ''monthOffset'' for clarity\n- Remove trailing whitespace throughout file\n- Reduce DashboardView struct body from 423 to ~350 lines\n- Reduce overall file length by splitting components into DashboardComponents.swift\")",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(swiftlint lint:*)",
+      "Bash(swiftlint:*)"
     ],
     "deny": [],
     "ask": []

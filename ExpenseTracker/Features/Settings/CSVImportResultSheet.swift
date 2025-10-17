@@ -10,7 +10,7 @@ import SwiftUI
 struct CSVImportResultSheet: View {
     let result: CSVService.ImportResult
     @Environment(\.dismiss) private var dismiss
-    
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -23,7 +23,7 @@ struct CSVImportResultSheet: View {
                             icon: "checkmark.circle.fill",
                             color: .green
                         )
-                        
+
                         if result.duplicatesSkipped > 0 {
                             summaryCard(
                                 title: "Duplicates Skipped",
@@ -32,7 +32,7 @@ struct CSVImportResultSheet: View {
                                 color: .orange
                             )
                         }
-                        
+
                         if result.invalidRows > 0 {
                             summaryCard(
                                 title: "Invalid Rows",
@@ -42,14 +42,14 @@ struct CSVImportResultSheet: View {
                             )
                         }
                     }
-                    
+
                     // Error Details
                     if !result.errors.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Error Details")
                                 .font(.headline)
                                 .foregroundStyle(.primary)
-                            
+
                             VStack(alignment: .leading, spacing: 4) {
                                 ForEach(result.errors, id: \.self) { error in
                                     Text(error)
@@ -62,7 +62,7 @@ struct CSVImportResultSheet: View {
                             .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
                         }
                     }
-                    
+
                     // Success Message
                     if result.imported > 0 {
                         HStack {
@@ -97,14 +97,14 @@ struct CSVImportResultSheet: View {
             }
         }
     }
-    
+
     private func summaryCard(title: String, value: Int, icon: String, color: Color) -> some View {
         HStack {
             Image(systemName: icon)
                 .font(.title2)
                 .foregroundStyle(color)
                 .frame(width: 30)
-            
+
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.subheadline)
@@ -114,7 +114,7 @@ struct CSVImportResultSheet: View {
                     .fontWeight(.semibold)
                     .foregroundStyle(.primary)
             }
-            
+
             Spacer()
         }
         .padding()

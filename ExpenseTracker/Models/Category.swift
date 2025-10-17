@@ -13,10 +13,10 @@ final class Category {
     var name: String
     var color: String
     var symbolName: String
-    
+
     @Relationship(deleteRule: .cascade, inverse: \Expense.category)
     var expenses: [Expense] = []
-    
+
     init(name: String, color: String, symbolName: String) {
         self.name = name
         self.color = color
