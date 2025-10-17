@@ -37,7 +37,10 @@
       "Bash(gh pr view:*)",
       "Bash(gh pr status:*)",
       "Bash(git fetch:*)",
-      "Bash(git merge:*)"
+      "Bash(git merge:*)",
+      "Bash(xed:*)",
+      "Bash(git -C /Users/Z004S1K/Desktop/Github/JeffESchmitz/expense-tracker-export diff --stat HEAD)",
+      "Bash(git -C /Users/Z004S1K/Desktop/Github/JeffESchmitz/expense-tracker-export status)"
     ],
     "deny": [],
     "ask": []
