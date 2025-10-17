@@ -206,86 +206,74 @@ struct ExpenseListView: View {
             }
             .navigationTitle(navigationTitle)
             .searchable(text: $searchText, prompt: "Search expenses...")
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Menu {
-                        // Date Range Filters
-                        ForEach(DateRangeFilter.allCases.filter { $0 != .custom }, id: \.self) { filter in
-                            Button(filter.displayName) {
-                                selectDateRangeFilter(filter)
-                            }
+            .navigationBarItems(
+                leading: Menu {
+                    // Date Range Filters
+                    ForEach(DateRangeFilter.allCases.filter { $0 != .custom }, id: \.self) { filter in
+                        Button(filter.displayName) {
+                            selectDateRangeFilter(filter)
                         }
+                    }
 
-                        Button("Custom…") {
-                            showingCustomDateSheet = true
+                    Button("Custom…") {
+                        showingCustomDateSheet = true
+                    }
+
+                    Divider()
+
+                    // Category Filters
+                    Button("All Categories") {
+                        selectedCategoryName = nil
+                    }
+
+                    ForEach(categories, id: \.name) { category in
+                        Button(category.name) {
+                            selectedCategoryName = category.name
                         }
+                    }
 
+                    Divider()
+
+                    Button("Clear Filters") {
+                        clearAllFilters()
+                    }
+
+                    #if DEBUG
+                    if expenses.isEmpty {
                         Divider()
-
-                        // Category Filters
-                        Button("All Categories") {
-                            selectedCategoryName = nil
+                        Button("Insert Sample Expenses (Debug)") {
+                            insertSampleExpenses()
                         }
-
-                        ForEach(categories, id: \.name) { category in
-                            Button(category.name) {
-                                selectedCategoryName = category.name
+                    }
+                    #endif
+                } label: {
+                    Image(systemName: hasActiveFilters ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+                        .foregroundStyle(hasActiveFilters ? .blue : .primary)
+                },
+                trailing: HStack(spacing: 8) {
+                    // Export button (optional nice-to-have)
+                    if !filteredExpenses.isEmpty {
+                        if let url = exportFileURL {
+                            ShareLink(item: url) {
+                                Image(systemName: "square.and.arrow.up")
                             }
-                        }
-
-                        Divider()
-
-                        Button("Clear Filters") {
-                            clearAllFilters()
-                        }
-
-                        #if DEBUG
-                        if expenses.isEmpty {
-                            Divider()
-                            Button("Insert Sample Expenses (Debug)") {
-                                insertSampleExpenses()
-                            }
-                        }
-                        #endif
-                    } label: {
-                        let symbolName: String
-                        if hasActiveFilters {
-                            symbolName = "line.3.horizontal.decrease.circle.fill"
                         } else {
-                            symbolName = "line.3.horizontal.decrease.circle"
-                        }
-
-                        Image(systemName: symbolName)
-                            .foregroundStyle(hasActiveFilters ? .blue : .primary)
-                    }
-                }
-
-                ToolbarItem(placement: .topBarTrailing) {
-                    HStack(spacing: 8) {
-                        // Export button (optional nice-to-have)
-                        if !filteredExpenses.isEmpty {
-                            if let url = exportFileURL {
-                                ShareLink(item: url) {
-                                    Image(systemName: "square.and.arrow.up")
-                                }
-                            } else {
-                                Button {
-                                    exportCSV()
-                                } label: {
-                                    Image(systemName: "square.and.arrow.up")
-                                }
+                            Button {
+                                exportCSV()
+                            } label: {
+                                Image(systemName: "square.and.arrow.up")
                             }
                         }
+                    }
 
-                        // Add expense button
-                        Button {
-                            showingAddSheet = true
-                        } label: {
-                            Image(systemName: "plus")
-                        }
+                    // Add expense button
+                    Button {
+                        showingAddSheet = true
+                    } label: {
+                        Image(systemName: "plus")
                     }
                 }
-            }
+            )
             .sheet(isPresented: $showingAddSheet) {
                 AddExpenseSheet()
             }
