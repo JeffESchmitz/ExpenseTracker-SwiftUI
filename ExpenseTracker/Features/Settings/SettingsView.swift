@@ -31,6 +31,7 @@ struct SettingsView: View {
     @State private var showingDemoDeleteConfirmation = false
     @State private var showingDemoDataResult = false
     @State private var demoDataResultMessage = ""
+    @State private var showingExportMenu = false
 
     private var selectedFilter: DateRangeFilter {
         DateRangeFilter(rawValue: filterTypeRaw) ?? .defaultFilter
@@ -103,8 +104,12 @@ struct SettingsView: View {
                 SettingsDataSection(
                     exportFileURL: $exportFileURL,
                     showingImportPicker: $showingImportPicker,
+                    showingExportMenu: $showingExportMenu,
                     filteredCount: filteredExpenses.count,
-                    exportAction: exportCSV
+                    exportCSVAction: exportCSV,
+                    exportJSONAction: exportJSON,
+                    exportPDFAction: exportPDF,
+                    exportExcelAction: exportExcel
                 )
 
                 // App Info Section
@@ -185,6 +190,42 @@ struct SettingsView: View {
             // Success haptic
             let notificationFeedback = UINotificationFeedbackGenerator()
             notificationFeedback.notificationOccurred(.success)
+        }
+    }
+
+    private func exportJSON() {
+        let jsonContent = CSVService.exportExpensesAsJSON(filteredExpenses)
+
+        if let fileURL = CSVService.createTempJSONFile(content: jsonContent) {
+            exportFileURL = fileURL
+
+            // Success haptic
+            let notificationFeedback = UINotificationFeedbackGenerator()
+            notificationFeedback.notificationOccurred(.success)
+        }
+    }
+
+    private func exportPDF() {
+        if let pdfData = PDFExportService.exportExpensesAsPDF(filteredExpenses) {
+            if let fileURL = PDFExportService.createTempPDFFile(data: pdfData) {
+                exportFileURL = fileURL
+
+                // Success haptic
+                let notificationFeedback = UINotificationFeedbackGenerator()
+                notificationFeedback.notificationOccurred(.success)
+            }
+        }
+    }
+
+    private func exportExcel() {
+        if let excelData = ExcelExportService.exportExpensesAsExcel(filteredExpenses) {
+            if let fileURL = ExcelExportService.createTempExcelFile(data: excelData) {
+                exportFileURL = fileURL
+
+                // Success haptic
+                let notificationFeedback = UINotificationFeedbackGenerator()
+                notificationFeedback.notificationOccurred(.success)
+            }
         }
     }
 

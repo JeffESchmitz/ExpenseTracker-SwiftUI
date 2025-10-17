@@ -110,8 +110,12 @@ struct SettingsDemoSection: View {
 struct SettingsDataSection: View {
     @Binding var exportFileURL: URL?
     @Binding var showingImportPicker: Bool
+    @Binding var showingExportMenu: Bool
     var filteredCount: Int
-    var exportAction: () -> Void
+    var exportCSVAction: () -> Void
+    var exportJSONAction: () -> Void
+    var exportPDFAction: () -> Void
+    var exportExcelAction: () -> Void
 
     var body: some View {
         Section {
@@ -121,7 +125,7 @@ struct SettingsDataSection: View {
                     .frame(width: 24)
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Export CSV")
+                    Text("Export Expenses")
                         .font(.body)
                     Text("Export \(filteredCount) filtered expense\(filteredCount == 1 ? "" : "s")")
                         .font(.caption)
@@ -137,17 +141,30 @@ struct SettingsDataSection: View {
                             .foregroundStyle(.blue)
                     }
                 } else {
-                    Button("Export") {
-                        exportAction()
+                    Menu {
+                        Button(action: exportCSVAction) {
+                            Label("CSV", systemImage: "doc.plaintext")
+                        }
+                        Button(action: exportJSONAction) {
+                            Label("JSON", systemImage: "doc.text")
+                        }
+                        Button(action: exportPDFAction) {
+                            Label("PDF", systemImage: "doc.pdf")
+                        }
+                        Button(action: exportExcelAction) {
+                            Label("Excel (.xlsx)", systemImage: "doc.richtext")
+                        }
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.title3)
+                            .foregroundStyle(.blue)
                     }
-                    .font(.subheadline)
-                    .foregroundStyle(.blue)
                 }
             }
             .contentShape(Rectangle())
             .onTapGesture {
                 if exportFileURL == nil {
-                    exportAction()
+                    showingExportMenu = true
                 }
             }
 
@@ -180,7 +197,7 @@ struct SettingsDataSection: View {
         } header: {
             Text("Data")
         } footer: {
-            Text("CSV uses ISO dates (yyyy-MM-dd) and decimal amounts.")
+            Text("Supported formats: CSV, JSON, PDF, and Excel (.xlsx). All exports respect active filters.")
                 .font(.caption)
         }
     }
