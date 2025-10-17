@@ -43,7 +43,6 @@ enum DateRangeFilter: String, CaseIterable {
     func dateRange(customStart: Date? = nil, customEnd: Date? = nil) -> (start: Date, end: Date)? {
         let calendar = Calendar.current
         let now = Date()
-
         switch self {
         case .allTime:
             return nil // No date filtering
@@ -61,20 +60,10 @@ enum DateRangeFilter: String, CaseIterable {
             return (startOfLastMonth, endOfLastMonth)
 
         case .last7Days:
-            guard let sevenDaysAgo = calendar.date(byAdding: .day, value: -7, to: now) else {
-                return nil
-            }
-            let startOfDay = calendar.startOfDay(for: sevenDaysAgo)
-            let endOfToday = calendar.dateInterval(of: .day, for: now)?.end ?? now
-            return (startOfDay, endOfToday)
+            return rangeForLast(days: 7, calendar: calendar, now: now)
 
         case .last30Days:
-            guard let thirtyDaysAgo = calendar.date(byAdding: .day, value: -30, to: now) else {
-                return nil
-            }
-            let startOfDay = calendar.startOfDay(for: thirtyDaysAgo)
-            let endOfToday = calendar.dateInterval(of: .day, for: now)?.end ?? now
-            return (startOfDay, endOfToday)
+            return rangeForLast(days: 30, calendar: calendar, now: now)
 
         case .yearToDate:
             let startOfYear = calendar.dateInterval(of: .year, for: now)?.start ?? now
@@ -91,6 +80,16 @@ enum DateRangeFilter: String, CaseIterable {
             let endOfDay = calendar.dateInterval(of: .day, for: customEnd)?.end ?? customEnd
             return (startOfDay, endOfDay)
         }
+    }
+
+    // Helper to compute start/end for last N days
+    private func rangeForLast(days: Int, calendar: Calendar, now: Date) -> (start: Date, end: Date)? {
+        guard let past = calendar.date(byAdding: .day, value: -days, to: now) else {
+            return nil
+        }
+        let startOfDay = calendar.startOfDay(for: past)
+        let endOfToday = calendar.dateInterval(of: .day, for: now)?.end ?? now
+        return (startOfDay, endOfToday)
     }
 
     static let defaultFilter: DateRangeFilter = .allTime

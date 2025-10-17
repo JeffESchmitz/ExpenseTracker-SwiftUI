@@ -73,6 +73,8 @@ disabled_rules:
   - switch_case_on_newline  # Too strict for single-case switches
   - nesting  # Too strict for view compositions
   - naming_patterns  # Disable pattern matching, use explicit rules
+  - line_length  # Disabled per user request
+  - file_length  # Disabled per user request
 
 opt_in_rules:
   - empty_count

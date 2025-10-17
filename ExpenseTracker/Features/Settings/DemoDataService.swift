@@ -14,27 +14,20 @@ struct DemoDataService {
         print("🎭 DemoDataService: Starting demo data insertion")
         print("🎭 DemoDataService: Categories count: \(categories.count)")
 
-        // Ensure we don't double-seed
-        let existingDemoCount = countDemoExpenses(modelContext: modelContext)
-        print("🎭 DemoDataService: Existing demo expenses: \(existingDemoCount)")
-
-        if existingDemoCount > 0 {
-            print("🎭 DemoDataService: Demo data already exists, returning existing count")
+        // Ensure we don't double-seed and have categories
+        if let existingDemoCount = shouldSkipSeeding(modelContext: modelContext) {
             return existingDemoCount
         }
 
-        guard !categories.isEmpty else {
-            print("🎭 DemoDataService: No categories found, cannot generate demo data")
-            return 0
-        }
+        guard hasCategories(categories) else { return 0 }
 
-        let calendar = Calendar.current
-        let now = Date()
-        let expenseCount = Int.random(in: 80...120)
-        print("🎭 DemoDataService: Will create \(expenseCount) demo expenses")
+    let calendar = Calendar.current
+    let now = Date()
+    let expenseCount = createExpenseCount()
+    print("🎭 DemoDataService: Will create \(expenseCount) demo expenses")
 
-        // Sample notes for realistic variety
-        let sampleNotes = [
+    // Sample notes for realistic variety
+    let sampleNotes = DemoDataService.sampleNotes
             "Coffee and pastry",
             "Grocery shopping",
             "Gas station fill-up",
@@ -61,36 +54,21 @@ struct DemoDataService {
         var createdExpenses = 0
 
         for _ in 0..<expenseCount {
-            // Random date in last 6-12 months
-            let monthsBack = Int.random(in: 1...12)
-            let daysBack = Int.random(in: 0...30)
-
-            guard let baseDate = calendar.date(byAdding: .month, value: -monthsBack, to: now),
-                  let expenseDate = calendar.date(byAdding: .day, value: -daysBack, to: baseDate) else {
-                continue
+            if let expense = makeRandomExpense(
+                now: now,
+                calendar: calendar,
+                categories: categories,
+                sampleNotes: sampleNotes
+            ) {
+                modelContext.insert(expense)
+                createdExpenses += 1
             }
-
-            // Random category
-            let randomCategory = categories.randomElement()!
-
-            // Realistic amount based on category
-            let amount = generateRealisticAmount(for: randomCategory.name)
-
-            // Random notes (some expenses have no notes)
-            let notes = sampleNotes.randomElement() ?? nil
-
-            let expense = Expense(
-                amount: amount,
-                date: expenseDate,
-                notes: notes,
-                category: randomCategory,
-                isDemo: true
-            )
-
-            modelContext.insert(expense)
-            createdExpenses += 1
         }
 
+        return saveAndReturnCount(modelContext: modelContext, createdExpenses: createdExpenses)
+    }
+
+    private static func saveAndReturnCount(modelContext: ModelContext, createdExpenses: Int) -> Int {
         do {
             try modelContext.save()
             print("🎭 DemoDataService: Successfully created \(createdExpenses) demo expenses")
@@ -99,6 +77,30 @@ struct DemoDataService {
             print("🎭 DemoDataService: Failed to save demo expenses: \(error)")
             return 0
         }
+    }
+
+    private static func shouldSkipSeeding(modelContext: ModelContext) -> Int? {
+        let existingDemoCount = countDemoExpenses(modelContext: modelContext)
+        if existingDemoCount > 0 {
+            print("🎭 DemoDataService: Existing demo expenses: \(existingDemoCount)")
+            print("🎭 DemoDataService: Demo data already exists, returning existing count")
+            return existingDemoCount
+        }
+
+        return nil
+    }
+
+    private static func createExpenseCount() -> Int {
+        return Int.random(in: 80...120)
+    }
+
+    private static func hasCategories(_ categories: [Category]) -> Bool {
+        if categories.isEmpty {
+            print("🎭 DemoDataService: No categories found, cannot generate demo data")
+            return false
+        }
+
+        return true
     }
 
     static func removeDemoData(modelContext: ModelContext) -> Int {
@@ -169,5 +171,40 @@ struct DemoDataService {
         default:
             return Decimal(Double.random(in: 10.0...100.0))
         }
+    }
+
+    // MARK: - Helpers for insertDemoData
+
+    private static func makeRandomExpense(
+        now: Date,
+        calendar: Calendar,
+        categories: [Category],
+        sampleNotes: [String?]
+    ) -> Expense? {
+        // Random date in last 6-12 months
+        let monthsBack = Int.random(in: 1...12)
+        let daysBack = Int.random(in: 0...30)
+
+        guard let baseDate = calendar.date(byAdding: .month, value: -monthsBack, to: now),
+              let expenseDate = calendar.date(byAdding: .day, value: -daysBack, to: baseDate) else {
+            return nil
+        }
+
+        // Random category
+        guard let randomCategory = categories.randomElement() else { return nil }
+
+        // Realistic amount based on category
+        let amount = generateRealisticAmount(for: randomCategory.name)
+
+    // Random notes (some expenses have no notes)
+    let notes = sampleNotes.randomElement() ?? nil
+
+        return Expense(
+            amount: amount,
+            date: expenseDate,
+            notes: notes,
+            category: randomCategory,
+            isDemo: true
+        )
     }
 }

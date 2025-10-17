@@ -221,20 +221,21 @@ struct AddCategorySheet: View {
     }
 
     private func colorForCategory(_ colorName: String) -> Color {
-        switch colorName.lowercased() {
-        case "green": return .green
-        case "blue": return .blue
-        case "orange": return .orange
-        case "pink": return .pink
-        case "red": return .red
-        case "purple": return .purple
-        case "teal": return .teal
-        case "yellow": return .yellow
-        case "indigo": return .indigo
-        case "brown": return .brown
-        case "gray": return .gray
-        default: return .blue
-        }
+        let map: [String: Color] = [
+            "green": .green,
+            "blue": .blue,
+            "orange": .orange,
+            "pink": .pink,
+            "red": .red,
+            "purple": .purple,
+            "teal": .teal,
+            "yellow": .yellow,
+            "indigo": .indigo,
+            "brown": .brown,
+            "gray": .gray
+        ]
+
+        return map[colorName.lowercased()] ?? .blue
     }
 }
 

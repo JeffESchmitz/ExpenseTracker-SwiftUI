@@ -59,11 +59,11 @@ CLAUDE.md                          # AI contributor guidance
   - Create feature branches: `feature/...`, `fix/...`, `chore/...`, `ci/...`.
 - **Commits**
   - Use [Conventional Commits](https://www.conventionalcommits.org/):
-    - `feat:` new feature  
-    - `fix:` bug fix  
-    - `chore:` tooling/infra changes  
-    - `ci:` workflows and automation  
-    - `docs:` documentation only  
+    - `feat:` new feature
+    - `fix:` bug fix
+    - `chore:` tooling/infra changes
+    - `ci:` workflows and automation
+    - `docs:` documentation only
     - `refactor:` internal restructuring, no behavior change
 - **Pull Requests**
   - All changes via PRs into `main`.
