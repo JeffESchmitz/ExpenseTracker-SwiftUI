@@ -420,7 +420,7 @@ class BudgetEdgeCaseTests: XCTestCase {
             modelContext.insert(expense2)
             try modelContext.save()
 
-            XCTAssertTrue(budget.isAlertThreshold, "90% should trigger alert")
+            XCTAssertFalse(budget.isAlertThreshold, "90% should NOT trigger alert (alert is 75-89%)")
             XCTAssertTrue(budget.isWarningThreshold, "90% should trigger warning")
         } catch {
             XCTFail("Failed: \(error)")
