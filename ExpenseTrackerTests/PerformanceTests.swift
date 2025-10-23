@@ -361,11 +361,19 @@ class PerformanceTests: XCTestCase {
         let expectation = XCTestExpectation(description: "Concurrent reads")
         expectation.expectedFulfillmentCount = 5
 
-        // Simulate multiple concurrent read operations
+        // Simulate multiple concurrent read operations with separate contexts per thread
         for _ in 0..<5 {
             DispatchQueue.global().async {
-                let expenses = self.fetchAllExpenses()
-                XCTAssertGreaterThan(expenses.count, 0)
+                // Create a separate context for this thread (ModelContext is not thread-safe)
+                let threadContext = ModelContext(self.modelContainer)
+
+                let fetchDescriptor = FetchDescriptor<ExpenseTracker.Expense>()
+                do {
+                    let expenses = try threadContext.fetch(fetchDescriptor)
+                    XCTAssertGreaterThan(expenses.count, 0)
+                } catch {
+                    XCTFail("Failed to fetch expenses: \(error)")
+                }
                 expectation.fulfill()
             }
         }
