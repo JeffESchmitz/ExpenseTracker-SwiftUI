@@ -58,8 +58,8 @@ final class BudgetTests: XCTestCase {
 
     func testCalculateCurrentSpendingIncludesExpensesOnLastDay() throws {
         // Given: A category with expenses throughout the month, including on the last day
-        let category = try Category(name: "Food", colorHex: "#FF0000")
-        let budget = try Budget(category: category, monthlyLimit: 200, currentMonth: Date())
+        let category = ExpenseTracker.Category(name: "Food", color: "orange", symbolName: "fork.knife")
+        let budget = try ExpenseTracker.Budget(category: category, monthlyLimit: 200, currentMonth: Date())
 
         // Get the month start and end dates
         let calendar = Calendar.current
@@ -67,11 +67,11 @@ final class BudgetTests: XCTestCase {
         let monthEnd = Date().endOfMonth
 
         // Create an expense on the first day
-        let firstDayExpense = Expense(
-            category: category,
+        let firstDayExpense = ExpenseTracker.Expense(
             amount: 50,
-            description: "First day",
             date: monthStart,
+            notes: "First day",
+            category: category,
             isDemo: false
         )
 
@@ -80,11 +80,11 @@ final class BudgetTests: XCTestCase {
         lastDayComponents.hour = 23
         lastDayComponents.minute = 30
         let lastDayDate = calendar.date(from: lastDayComponents)!
-        let lastDayExpense = Expense(
-            category: category,
+        let lastDayExpense = ExpenseTracker.Expense(
             amount: 75,
-            description: "Last day",
             date: lastDayDate,
+            notes: "Last day",
+            category: category,
             isDemo: false
         )
 
@@ -101,18 +101,18 @@ final class BudgetTests: XCTestCase {
 
     func testCalculateCurrentSpendingExcludesExpensesOutsideMonth() throws {
         // Given: A category with expenses in and out of the current month
-        let category = try Category(name: "Food", colorHex: "#FF0000")
-        let budget = try Budget(category: category, monthlyLimit: 200, currentMonth: Date())
+        let category = ExpenseTracker.Category(name: "Food", color: "orange", symbolName: "fork.knife")
+        let budget = try ExpenseTracker.Budget(category: category, monthlyLimit: 200, currentMonth: Date())
 
         let calendar = Calendar.current
         let monthStart = Date().startOfMonth
 
         // Create an expense in the current month
-        let currentMonthExpense = Expense(
-            category: category,
+        let currentMonthExpense = ExpenseTracker.Expense(
             amount: 50,
-            description: "This month",
             date: monthStart,
+            notes: "This month",
+            category: category,
             isDemo: false
         )
 
@@ -121,11 +121,11 @@ final class BudgetTests: XCTestCase {
         nextMonthComponents.month = (nextMonthComponents.month ?? 0) + 1
         nextMonthComponents.day = 1
         let nextMonthDate = calendar.date(from: nextMonthComponents)!
-        let nextMonthExpense = Expense(
-            category: category,
+        let nextMonthExpense = ExpenseTracker.Expense(
             amount: 75,
-            description: "Next month",
             date: nextMonthDate,
+            notes: "Next month",
+            category: category,
             isDemo: false
         )
 
