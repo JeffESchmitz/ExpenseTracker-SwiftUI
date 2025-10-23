@@ -39,9 +39,16 @@
       "Bash(git fetch:*)",
       "Bash(git merge:*)",
       "Read(//Users/Z004S1K/Desktop/Github/JeffESchmitz/expense-tracker-budget/ExpenseTracker/Models/**)",
-      "Read(//Users/Z004S1K/Desktop/Github/JeffESchmitz/expense-tracker-budget/ExpenseTracker/**)"
+      "Read(//Users/Z004S1K/Desktop/Github/JeffESchmitz/expense-tracker-budget/ExpenseTracker/**)",
+      "Bash(git log:*)",
+      "Bash(git -C /Users/Z004S1K/Desktop/Github/JeffESchmitz/ExpenseTracker-SwiftUI show-branch:*)",
+      "Bash(git show:*)"
     ],
     "deny": [],
     "ask": []
-  }
+  },
+  "enabledMcpjsonServers": [
+    "XcodeBuildMCP",
+    "mcp-atlassian"
+  ]
 }
