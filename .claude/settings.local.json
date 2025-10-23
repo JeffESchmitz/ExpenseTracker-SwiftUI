@@ -42,7 +42,11 @@
       "Read(//Users/Z004S1K/Desktop/Github/JeffESchmitz/expense-tracker-budget/ExpenseTracker/**)",
       "Bash(git log:*)",
       "Bash(git -C /Users/Z004S1K/Desktop/Github/JeffESchmitz/ExpenseTracker-SwiftUI show-branch:*)",
-      "Bash(git show:*)"
+      "Bash(git show:*)",
+      "mcp__XcodeBuildMCP__swift_package_test",
+      "mcp__XcodeBuildMCP__discover_projs",
+      "mcp__XcodeBuildMCP__list_schems_proj",
+      "mcp__XcodeBuildMCP__list_sims"
     ],
     "deny": [],
     "ask": []
