@@ -70,9 +70,9 @@ final class Budget {
         return max(0, monthlyLimit - currentSpending)
     }
 
-    /// True if spending >= 75% of limit
+    /// True if spending is 75-89% of limit (alert but not warning)
     var isAlertThreshold: Bool {
-        percentageUsed >= 75.0
+        percentageUsed >= 75.0 && percentageUsed < 90.0
     }
 
     /// True if spending >= 90% of limit
